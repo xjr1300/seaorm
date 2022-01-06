@@ -109,25 +109,25 @@ pub struct Cake { ... }
 
 列の型は、以下のマッピングで自動的に導出される。
 
-| `Rust`の型 | データベースの型(`ColumnType`) |
-| --- | --- |
-| `char` | `Char`|
-| `String` | `String` |
-| `u8`, `i8` | `TinyInteger` |
-| `u16`, `i16` | `SmallInteger` |
-| `u32`, `i32` | `Integer` |
-| `u64`, `i64` | `BigInteger` |
-| `f32` | `Float` |
-| `f64` | `Double` |
-| `bool` | `Boolean` |
-| `NaiveDate` | `Date` |
-| `NaiveTime` | `Time` |
-| `DateTime (chrono::NaiveDateTime)` | `DateTime` |
-| `DateTimeWithTimeZone (chrono::DateTime<FixedOffset>)` | `TimestampWithTimeZone` |
-| `Uuid (uuid::Uuid)` | `Uuid` |
-| `Json (serde_json::Value)` | `Json` |
-| `Decimal(rust_decimal::Decimal)` | `Decimal` |
-| `Vec<u8>` | `Binary` |
+| `Rust`の型                                             | データベースの型(`ColumnType`) |
+| ------------------------------------------------------ | ------------------------------ |
+| `char`                                                 | `Char`                         |
+| `String`                                               | `String`                       |
+| `u8`, `i8`                                             | `TinyInteger`                  |
+| `u16`, `i16`                                           | `SmallInteger`                 |
+| `u32`, `i32`                                           | `Integer`                      |
+| `u64`, `i64`                                           | `BigInteger`                   |
+| `f32`                                                  | `Float`                        |
+| `f64`                                                  | `Double`                       |
+| `bool`                                                 | `Boolean`                      |
+| `NaiveDate`                                            | `Date`                         |
+| `NaiveTime`                                            | `Time`                         |
+| `DateTime (chrono::NaiveDateTime)`                     | `DateTime`                     |
+| `DateTimeWithTimeZone (chrono::DateTime<FixedOffset>)` | `TimestampWithTimeZone`        |
+| `Uuid (uuid::Uuid)`                                    | `Uuid`                         |
+| `Json (serde_json::Value)`                             | `Json`                         |
+| `Decimal(rust_decimal::Decimal)`                       | `Decimal`                      |
+| `Vec<u8>`                                              | `Binary`                       |
 
 `column_type`属性によって、`Rust`の型と`ColumnType`のデフォルトマッピングをオーバーライドできる。
 
