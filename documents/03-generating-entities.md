@@ -1,4 +1,4 @@
-# Generation Entities
+# エンティティの生成
 
 ## Using sea-orm-cli
 
@@ -8,15 +8,16 @@
 cargo install sea-orm-cli
 ```
 
-### Configure Environment
+### 環境設定
 
-環境変数に`DATABASE_URL`を設定するか、プロジェクトのルートに`.env`ファイルを作成する。そして、データベース接続設定を記述する。
+環境変数に`DATABASE_URL`を設定するか、プロジェクトのルートに`.env`ファイルを作成する。
+そして、データベース接続設定を記述する。
 
 ```.env
 DATABASE_URL=sql://username:password@localhost/database
 ```
 
-### Getting Help
+### ヘルプの入手
 
 ヘルプを表示するために、CLIコマンド/サブコマンドに`-h`フラグを使用する。
 
@@ -31,7 +32,7 @@ sea-orm-cli generate -h
 sea-orm-cli generate entity -h
 ```
 
-### Generating Entity Files
+### エンティティファイルの生成
 
 データベース内のすべてのテーブルを探して、それぞれ対応する`SeaORM`エンティティファイルを生成する。
 
@@ -65,7 +66,7 @@ sea-orm-cli generate entity \
     -o src/entity
 ```
 
-## Entity Structure
+## エンティティ構造体
 
 単純な[Cake](https://github.com/SeaQL/sea-orm/blob/master/src/tests_cfg/cake.rs)エンティティを見なさい。
 
@@ -89,11 +90,11 @@ pub enum Relation {
 impl ActiveModelBehavior for ActiveModel {}
 ```
 
-### Entity
+### エンティティ
 
 `DeriveEntityModel`マクロは、`Model`、`Column`と`PrimaryKey`を関連付けて`Entity`を定義する面倒な作業をすべて実施する。
 
-#### Table Name
+#### テーブル名
 
 `table_name`属性は、データベース内の対応するテーブルを指定する。
 オプションで、データベーススキーマまたはデータベース名を`schema_name`で指定できる。
@@ -103,9 +104,9 @@ impl ActiveModelBehavior for ActiveModel {}
 pub struct Cake { ... }
 ```
 
-### Column
+### 列
 
-#### Column Type
+#### 列の型
 
 列の型は、以下のマッピングで自動的に導出される。
 
@@ -136,7 +137,7 @@ pub struct Cake { ... }
 pub name: String,
 ```
 
-#### Additional Properties
+#### 追加プロパティ
 
 `unique`、`indexed`及び`nullable`などの追加のプロパティを列に追加できる。
 
@@ -147,16 +148,16 @@ pub name: String,
 pub name: Option<String>,
 ```
 
-#### Ignore Attribute
+#### 無視属性
 
-データベースにマッピングたくないような、特定のモデルの属性を無視したい場合、`ignore`あのテーsy本を使用できる。
+データベースにマッピングしたくないような、特定のモデルの属性を無視したい場合、`ignore`あのテーsy本を使用できる。
 
 ```rust
 #[sea_orm(ignore)]
 pub ignore_me: String,
 ```
 
-### Primary Key
+### プライマリーキー
 
 プライマリーキーとして指定したい列に`primary_key`属性を使用できる。
 
@@ -165,7 +166,7 @@ pub ignore_me: String,
 pub id: i32,
 ```
 
-#### Auto Increment
+#### 自動インクリメント
 
 デフォルトで、`auto_increment`属性が`primary_key`列に暗黙的に追加される。
 `auto_increment`属性に`false`を指定することで、オーバーライドできる。
@@ -175,9 +176,9 @@ pub id: i32,
 pub id: i32,
 ```
 
-#### Composite Key
+#### 複合キー
 
- ジャンクションテーブルの場合に一般的だが、2つの列のタプルがプライマリキーとして使用される。
+ 一般的に連関テーブルの場合、2つの列のタプルがプライマリキーとして使用される。
  単純に、複合プライマリキーとして定義したい複数の列に注釈できる。
  デフォルトで、複合キーの`auto_increment`は`false`である。
 
@@ -190,7 +191,7 @@ pub id: i32,
  }
  ```
 
-### Relation
+### 関連
 
 `DeriveRelation`マクロは、`RelationTrait`の実装の単純なラッパーである。
 
@@ -216,7 +217,7 @@ impl RelationTrait for Relation {
 
 次のセクションで、よりリレーションについて学ぶ。
 
-## Expanded Entity Structure
+## エンティティ構造体の拡張
 
 `SeaORM`は動的で、それはランタイムに柔軟に構成できることを示す。
 `DeriveEntityModel`が何に拡張されるか知りたい場合は読み進めること。
@@ -224,7 +225,7 @@ impl RelationTrait for Relation {
 
 エンティティフォーマットの拡張は、`--expanded-format`オプションで`sea-orm-cli`によって生成される。
 
-### Entity
+### エンティティ
 
 [EntityTrait](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.EntityTrait.html)の実装によって、与えられたテーブルの`CRUD`操作ができる。
 
@@ -243,7 +244,7 @@ impl EntityName for Entity {
 }
 ```
 
-### Column
+### 列
 
 `enum`は、このテーブル内のすべての列を表現する。
 
@@ -278,7 +279,7 @@ pub enum Column {
 
 それぞれの列にデータ型を指定するために、[ColumnType](https://docs.rs/sea-orm/0.5/sea_orm/entity/enum.ColumnType.html)列挙型を使用できる。
 
-#### Additional properties
+#### 追加のプロパティ
 
 * Unique
 * Indexed
@@ -288,7 +289,7 @@ pub enum Column {
 ColumnType::String(None).def().unique().indexed().nullable()
 ```
 
-### Primary Key
+### プライマリーキー
 
 テーブルのプライマリキーを表現する列挙型である。
 複合キーは複数のバリアントの列挙型で表現される。
@@ -329,7 +330,7 @@ impl PrimaryKeyTrait for PrimaryKey {
 }
 ```
 
-### Model
+### モデル
 
 クエリの結果を蓄積する`Rust`構造体である。
 
@@ -340,7 +341,7 @@ pub struct Model {
     pub name: String,
 }
 
-#### Nullable Attribute
+#### NULL可能属性
 
 テーブルの列がNullを許容する場合、その列を`Option`でラップする。
 
@@ -351,7 +352,7 @@ pub struct Model {
 }
 ```
 
-### Active Model
+### アクティブモデル
 
 `ActiveModel`は`Model`に対応する属性をすべて持つが、すべての属性は[ActiveValue](https://docs.rs/sea-orm/0.5/sea_orm/entity/struct.ActiveValue.html)でラップされる。
 
@@ -363,11 +364,11 @@ pub struct ActiveModel {
 }
 ```
 
-#### Active Model Behavior
+#### アクティブモデルの振る舞い
 
 `ActiveModel`でトリガーされた様々なアクションのハンドラである。
 例えば、カスタム検証ロジックを実行して、モデルがデータベースに保存されないようにすることができる。
-もしトランザクションの内部であれば、それが終了したらアクションを中断できる。
+もしトランザクションの内部であれば、検証の終了後、アクションを中断できる。
 
 ```rust
 impl ActiveModelBehavior for ActiveModel {
@@ -403,19 +404,19 @@ impl ActiveModelBehavior for ActiveModel {
     }
 
     /// 削除後にトリガーされる。
-    fn after_delete(self) -> Result<Self, DbErro> {
+    fn after_delete(self) -> Result<Self, DbError> {
         Ok(self)
     }
 }
 ```
 
-もし、カスタマイズが必要ないのであれば、単に以下の様に記述できる。
+もし、カスタマイズが必要ないのであれば、単に以下のように記述できる。
 
 ```rust
 impl ActiveModelBehavior for ActiveMode {}
 ```
 
-### Relation
+### 関連
 
 他のエンティティとの関連を指定する。
 
@@ -434,7 +435,7 @@ impl RelationTrait for Relation {
 }
 ```
 
-### Related
+### 関係
 
 関連するエンティティを同時にクエリする際に役立つトレイト境界を定義して、特に多対多の関連で役に立つ。
 
@@ -456,11 +457,11 @@ impl Related<super::filling::Entity> for Entity {
 }
 ```
 
-## Enumeration
+## 列挙型
 
-データベースの文字列、整数または列挙型にマッピングされた値にマッピングされるモデルで、`Rust`の列挙型を使用できる。
+データベースの文字列、整数または列挙型にマッピングされた値があるモデルで、`Rust`の列挙型を使用できる。
 
-### String
+### 文字列
 
 ```rust
 #[derive(EnumIter, DeriveActiveEnum)]
@@ -473,7 +474,7 @@ pub enum Category {
 }
 ```
 
-### Integer
+### 整数
 
 ```rust
 #[derive(EnumIter, DeriveActionEnum)]
@@ -486,7 +487,7 @@ pub enum Color {
 }
 ```
 
-#### Native Database Enum
+#### データベースの列挙型
 
 ```rust
 #[derive(EnumIter, DeriveActiveEnum)]
@@ -499,11 +500,11 @@ pub enum Tea {
 }
 ```
 
-### Implementations
+### 実装
 
 手動または[DeriveActiveEnum](https://docs.rs/sea-orm/0.5/sea_orm/derive.DeriveActiveEnum.html)導出マクロを使用して、[ActiveEnum](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.ActiveEnum.html)を実装できる。
 
-#### Derive Implementation
+#### Deriveの実装
 
 マクロの属性のすべての仕様を確認するために、[DeriveActiveEnum](https://docs.rs/sea-orm/0.5/sea_orm/derive.DeriveActiveEnum.html)を参照しなさい。
 
@@ -521,7 +522,7 @@ pub enum Category {
 }
 ```
 
-#### Manual Implementation
+#### 手動実装
 
 ```rust
 use sea_orm::entity::prelude::*;
@@ -567,7 +568,7 @@ impl ActiveEnum for Category {
 }
 ```
 
-### Using ActiveEnum on Model
+### モデルにおけるActiveEnumの使用
 
 ```rust
 use sea_orm::entity::prelude::*;
