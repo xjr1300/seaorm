@@ -7,3 +7,5 @@
 ## [エンティティの生成](03-generating-entities.md)
 
 ## [データベーススキーマの生成](04-generating-database-schema.md)
+
+## [CRUDの基本](../05-basic-crud.md)
