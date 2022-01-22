@@ -1,6 +1,6 @@
-# Installation & Configuration
+# インストールと設定
 
-## Database & Async Runtime
+## データベースと非同期実行
 
 最初に、`Cargo.toml`ファイルの`[dependencies]`セクションに`sea-orm`を追加する。
 
@@ -48,12 +48,12 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 
 2. `native-tls`はプラットフォームのネイティブセキュリティ機能を指定するが、`rustls`は生粋の`Rust`の実装である。
 
-### Extra features
+### 追加機能
 
 * `debug-print` - ロガーにすべてのSQL文を出力する。
 * `mock` - ユニットテスト用のモックインタフェースである。
 
-## Schema Management
+## スキーマ管理
 
 テーブルとデータが記録されているデータベースが既にある場合、このセクションをスキップできる。
 
@@ -83,7 +83,7 @@ sqlx migrate add <name>
 sqlx migrate run
 ```
 
-### Connection Pool
+### コネクションプール
 
 データベース接続を得るために、[Database](https://docs.rs/sea-orm/0.5/sea_orm/struct.Database.html)インタフェースを使用する。
 
@@ -101,7 +101,7 @@ let db: DatabaseConnection = Database::connect("protocol://username:password@hos
 
 複数のクエリが、`await`をつけることで並列に実行される。
 
-### Connect Options
+### 接続オプション
 
 接続を構成するために、[ConnectOptions](https://docs.rs/sea-orm/0.5/sea_orm/struct.ConnectOptions.html)インターフェースを使用する。
 
@@ -116,7 +116,7 @@ opt.max_connections(100)
 let db = Database::connect(opt).await?;
 ```
 
-### Debug Log
+### デバッグログ
 
 `debug-print`機能を有効にした場合、`SeaORM`は[tracing](https://crates.io/crates/tracing)クレートによりデバッグメッセージをログに出力する。
 
@@ -136,5 +136,6 @@ pub async fn main() {
 `SeaORM`から出力されるデバッグログは、以下の通りフィルタできる。
 
 ```bash
-RUST_LOG=debug cargo run 2>&1 + grep sea_orm
+$ RUST_LOG=debug cargo run 2>&1 | grep sea_orm
+[2021-02-02T20:20:20Z DEBUG sea_orm::driver::sqlx_mysql] SELECT `cake`.`id`, `cake`.`name` FROM `cake` LIMIT 1
 ```
