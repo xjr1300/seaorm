@@ -5,6 +5,8 @@
         "rustls",
         "serde",
         "sqlx",
-        "struct"
+        "struct",
+        "testcase",
+        "Testville"
     ]
 }
