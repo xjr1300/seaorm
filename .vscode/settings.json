@@ -2,10 +2,12 @@
     "cSpell.words": [
         "autoincrement",
         "chrono",
+        "cust",
         "rustls",
         "serde",
         "sqlx",
         "struct",
+        "subquery",
         "testcase",
         "Testville"
     ]
