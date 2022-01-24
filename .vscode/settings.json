@@ -3,6 +3,7 @@
         "autoincrement",
         "chrono",
         "cust",
+        "Iden",
         "rustls",
         "serde",
         "sqlx",
