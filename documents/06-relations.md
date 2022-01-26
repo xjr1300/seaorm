@@ -35,7 +35,7 @@ impl Related<super::fruit::Entity> for Entity {
 }
 ```
 
-あるいは、定義は`DeriveRelation`マクロでタンスクでき、以下は上記と同義である。
+あるいは、定義は`DeriveRelation`マクロで短縮でき、以下は上記と同義である。
 
 ```rust
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -47,13 +47,13 @@ pub enum Relation {
 
 ### 1対1の逆の関連の定義
 
-`Fruit`エンティティにおいて、`cake_it`属性は、`Cake`エンティティのプライマリキーを参照している。
+`Fruit`エンティティにおいて、`cake_id`属性は、`Cake`エンティティのプライマリキーを参照している。
 
 以下の通り逆の関連を定義する。
 
-1. 新しい列挙型のバリアント`Relation::Cake`を`Fruit`エンティティにを追加する。
+1. 新しい列挙型のバリアント`Relation::Cake`を`Fruit`エンティティに追加する。
 2. `Relation`列挙型に`Entity::belongs_to()`メソッドを定義する。逆の関連は、常に`Entity::belongs_to()`メソッドで定義する。
-3. `Related<cake::Entity>トレイトを実装する。
+3. `Related<cake::Entity>`トレイトを実装する。
 
 ```rust
 // entity/fruit.rs
@@ -97,7 +97,7 @@ pub enum Relation {
 ## 1対多の関連
 
 1対多関連は、1対1関連と似ている。
-前のセクションにおいて、"`Cake`エンティティはせいぜい1つまでの`Fruit`のトッピングを持つと例をあげた。
+前のセクションにおいて、"`Cake`エンティティはせいぜい1つまでの`Fruit`のトッピングを持つ"と例をあげた。
 1対多関連を作成するために、"せいぜい1つ"との制約を削除する。
 `Cake`エンティティに多くの`Fruit`トッピングを持つようにする。
 
@@ -371,7 +371,7 @@ assert_eq!(
 
 ### 自己参照
 
-前のセクションにおいて、[Linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.Linked.html)とライトを紹介した。
+前のセクションにおいて、[Linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.Linked.html)トレイトを紹介した。
 `Linked`トレイトは自己参照する関連を定義できる。
 
 以下の例は自己参照するエンティティを定義する。

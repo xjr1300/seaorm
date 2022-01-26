@@ -5,7 +5,7 @@
 データベースにテーブルを作成するために、[TableCreateStatement](https://docs.rs/sea-query/*/sea_query/table/struct.TableCreateStatement.html)を手動で記述する代わりに、[Schema::create_table_from_entity](https://docs.rs/sea-orm/0.5/sea_orm/schema/struct.Schema.html#method.create_table_from_entity)を使用して`Entity`から導き出せる。
 このメソッドは、`Entity`に定義されたすべての列と外部キー制約を含むデータベーステーブルを作成することに役立つ。
 
-下で`CakeFillingPrice`エンティティを使用して、生成するSQLステートメントを生成するデモを示す。
+以下で`CakeFillingPrice`エンティティを使用して、生成するSQLステートメントを生成するデモを示す。
 
 ```rust
 use sea_orm::{sea_query::*, tests_cfg::*, EntityName, Schema};
@@ -53,9 +53,9 @@ assert_eq!(
             .to_owned()
     )
 );
-`
+```
 
-上記をさらに説明するために、下に文字列でSQLステートメントを示す。
+上記をさらに説明するために、以下に文字列でSQLステートメントを示す。
 
 * PostgreSQL
 
@@ -107,7 +107,7 @@ assert_eq!(
         .join(" ")
     )
 );
-`
+```
 
 * SQLite
 
@@ -137,7 +137,7 @@ assert_eq!(
 
 ## 列挙体の作成
 
-[Schema](https://docs.rs/sea-orm/0.5/sea_orm/schema/struct.Schema.html)ヘルパー構造体で、列挙体列を持つデータベーステーブルを作成s流ために、SQLステートメントを生成できる。
+[Schema](https://docs.rs/sea-orm/0.5/sea_orm/schema/struct.Schema.html)ヘルパー構造体で、列挙体列を持つデータベーステーブルを作成するために、SQLステートメントを生成できる。
 
 ### 文字列と整数列挙体
 
@@ -210,10 +210,10 @@ assert_eq!(
 );
 ```
 
-## 本来のデータベースの列挙体
+## データベースの列挙体
 
 列挙体のサーポートはデータベースによって異なる。
-データベースごとに1つずつ本来のデータベース列挙体の作成を説明する。
+データベースごとに1つずつ、データベース列挙体の作成を説明する。
 
 エンティティと列挙体を定義する。
 
@@ -294,7 +294,7 @@ assert_eq!(
 
 ### MySQL
 
-MySQLにおいて、列挙体はテーブルの作成で定義されるため、[Schema::create_table_from_entity](https://docs.rs/sea-orm/0.5/sea_orm/schema/struct.Schema.html#method.create_table_from_entity)めそどのみ必要である。
+MySQLにおいて、列挙体はテーブルの作成で定義されるため、[Schema::create_table_from_entity](https://docs.rs/sea-orm/0.5/sea_orm/schema/struct.Schema.html#method.create_table_from_entity)メソッドのみ必要である。
 
 ```rust
 use sea_orm::{Schema, Statement};

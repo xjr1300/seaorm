@@ -150,7 +150,7 @@ pub name: Option<String>,
 
 #### 無視属性
 
-データベースにマッピングしたくないような、特定のモデルの属性を無視したい場合、`ignore`あのテーsy本を使用できる。
+データベースにマッピングしたくないような、特定のモデルの属性を無視したい場合、`ignore`アノテーションを使用できる。
 
 ```rust
 #[sea_orm(ignore)]
@@ -178,7 +178,7 @@ pub id: i32,
 
 #### 複合キー
 
- 一般的に連関テーブルの場合、2つの列のタプルがプライマリキーとして使用される。
+ 一般的に連関テーブルの場合、2つの列の組がプライマリキーとして使用される。
  単純に、複合プライマリキーとして定義したい複数の列に注釈できる。
  デフォルトで、複合キーの`auto_increment`は`false`である。
 
@@ -219,7 +219,7 @@ impl RelationTrait for Relation {
 
 ## エンティティ構造体の拡張
 
-`SeaORM`は動的で、それはランタイムに柔軟に構成できることを示す。
+`SeaORM`は動的で、実行時に柔軟に構成できることを示す。
 `DeriveEntityModel`が何に拡張されるか知りたい場合は読み進めること。
 そうでなければ、現在のところスキップできる。
 
@@ -296,7 +296,7 @@ ColumnType::String(None).def().unique().indexed().nullable()
 
 `ValueType`は[InsertResult](https://docs.rs/sea-orm/0.5/sea_orm/struct.InsertResult.html)の`last_insert_id`の型を定義する。
 
-`auto_increment`はどのプライマリー器が自動的に生成された値をもつかを定義する。
+`auto_increment`は、プライマリーキーが自動的に生成された値をもつかを指定する。
 
 ```rust
 #[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
@@ -332,7 +332,7 @@ impl PrimaryKeyTrait for PrimaryKey {
 
 ### モデル
 
-クエリの結果を蓄積する`Rust`構造体である。
+クエリの結果を保存する`Rust`構造体である。
 
 ```rust
 #[derive(Clone, Debug, PartialEq, DeriveModel, DeriveActiveModel)]
@@ -340,6 +340,7 @@ pub struct Model {
     pub id: i32,
     pub name: String,
 }
+```
 
 #### NULL可能属性
 

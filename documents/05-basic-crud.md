@@ -12,7 +12,7 @@
 モデルのプライマリーキーでモデルを検索する。
 プライマリキーは、単独のキーまたは複合キーである。
 自動的に選択クエリと条件を構築する[Entity](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.EntityTrait.html)の[find_by_id](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.EntityTrait.html#method.find_by_id)の呼び出しから開始する。
-それで、`one`メソッドでデータベースから単独のモデルを取得する。
+そして、`one`メソッドでデータベースから単独のモデルを取得する。
 
 ```rust
 use super::cake::Entity as Cake;
@@ -61,7 +61,7 @@ let fruits: Vec<fruit::Model> = cheese.find_related(Fruit).all(db).await?;
 #### 貪欲なロード(Eager Loading)
 
 すべての関連するモデルが1度にロードされる。
-これは、遅延ロードと比較してデータベースとのやりとりが最小のオーバーヘッドにする。
+これは、遅延ロードと比較してデータベースとのやりとりのオーバーヘッドを最小化する。
 
 ##### 1対1
 
@@ -152,7 +152,7 @@ let pear: fruit::Model = pear.insert(db).await?;
 ```
 
 `ActiveModel`を挿入して、最後に挿入したIDを取得する。
-IDの方は`Model`のプライマリーキーの型にマッチしており、モデルが複合キーを持つ場合はタプルになる。
+IDは`Model`のプライマリーキーの型にマッチしており、モデルが複合キーを持つ場合はタプルになる。
 
 ```rust
 let pear = fruit::ActiveModel {
