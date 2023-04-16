@@ -16,11 +16,13 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 
 ### DATABASE_DRIVER
 
+データベースドライバを、次から1つ以上選択できます。
 
 * `sqlx-mysql` - SQLx MySQL
 * `sqlx-postgres` - SQLx PostgreSQL
 * `sqlx-sqlite` - SQLx SQLite
 
+[SQLxドキュメント](https://docs.rs/crate/sqlx/latest/features)も確認してください。
 
 ### ASYNC_RUNTIME
 
