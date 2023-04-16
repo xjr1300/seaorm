@@ -1,26 +1,26 @@
 # インストールと設定
 
-## データベースと非同期実行
+## データベースと非同期ランタイム
 
-最初に、`Cargo.toml`ファイルの`[dependencies]`セクションに`sea-orm`を追加する。
+まず最初に、[GitHubリポジトリ](https://github.com/SeaQL/sea-orm)にスターを付けてください!
+あなたの支援がSeaORMの維持を継続するために重要です。
+
+そして、`Cargo.toml`の`[dependencies]`セクションに`sea-orm`を追加します。
 
 ```toml
-# Cargo.toml
-sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "macros" ], default-features = false }
+sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "macros" ] }
 ```
 
-`DATABASE_DRIVER`と`ASYNC_RUNTIME`を選択する必要がある。
-`macro`は、`SeaORM`が生成するエンティティを使用する場合(最も一般的)に必要である。
+`DATABASE_DRIVER`と`ASYNC_RUNTIME`を選択しなければなりません。
+もし、SeaORMが生成するエンティティを使用する場合（ほとんどの場合）、`macro`が必要です。
 
 ### DATABASE_DRIVER
 
-データベースドライバを、以下から1つ以上選択する。
 
 * `sqlx-mysql` - SQLx MySQL
 * `sqlx-postgres` - SQLx PostgreSQL
 * `sqlx-sqlite` - SQLx SQLite
 
-[SQLxドキュメント](https://docs.rs/crate/sqlx/latest/features)
 
 ### ASYNC_RUNTIME
 
