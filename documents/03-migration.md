@@ -98,3 +98,36 @@ impl MigrationTrait for Migration {
     }
 }
 ```
+
+#### エンティティクレート
+
+ルートワークスペース内にエンティティクレートを作成します。
+
+> 定義されたSeaORMエンティティがありませんか?
+>
+> エンティティファイルなしでエンティティクレートを作成できます。
+> そして、マイグレーションを記述して、データベース内にテーブルを作成するためにそれを実行します。
+> 最後に、`sea-orm-cli`でSeaORMエンティティを生成して、`entity/src/entities`フォルダにエンティティファイルを出力します。
+>
+> エンティティファイルを生成した後で、`entity/src/lib.rs`に次の行を追加することで、生成したエンティティファイルを再エクスポートできます。
+>
+> ```rust
+> mod entities;
+> pub use entities::*;
+> ```
+
+```text
+entity
+├── Cargo.toml      # SeaORMへの依存を含める
+└── src
+    ├── lib.rs      # SeaORMとエンティティを再エクスポート
+    └── post.rs     # `post`エンティティを定義
+```
+
+SeaORMへの依存を記述します。
+
+```toml
+# entity/Cargo.toml
+[dependencies]
+sea-orm = { version = "^0" }
+```
