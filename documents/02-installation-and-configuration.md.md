@@ -26,7 +26,7 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 
 ### ASYNC_RUNTIME
 
-非同期ランタイムを、以下から1つ選択する。
+非同期ランタイムを、次から1つ選択する必要があります。
 
 * `runtime-actix-native-tls`
 * `runtime-async-std-native-tls`
@@ -35,20 +35,19 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 * `runtime-async-std-rustls`
 * `runtime-tokio-rustls`
 
-基本的に、これらは、`runtime-ASYNC_RUNTIME-TLS_LIB`の形式になっている。
+基本的に、それらは、`runtime-ASYNC_RUNTIME-TLS_LIB`の形式になっています。
 
-* `ASYNC_RUNTIME`は、`actix`、`async-std`または`tokio`になる。
-* `TLS_LIB`は、`native-tls`か`rustls`のどちらかである。
+* `ASYNC_RUNTIME`は、`actix`、`async-std`または`tokio`になります。
+* `TLS_LIB`は、`native-tls`か`rustls`のどちらかになります。
 
-1. `Rust`のWebフレームワークに対応する`ASYNC_RUNTIME`を選択する。
+1. `Rust`のWebフレームワークに対応するASYNC_RUNTIMEを選択してください。
+2. `native-tls`はプラットフォームのネイティブセキュリティ機能を使用しますが、`rustls`は純粋な`Rust`の実装です。
 
 | ASYNC_RUNTIME | Web Framework                                                           |
 | ------------- | ----------------------------------------------------------------------- |
 | `actix`       | [Actix](https://actix.rs/)                                              |
 | `async-std`   | [Tide](https://docs.rs/tide)                                            |
-| `tokio`       | [Axum](https://docs.rs/axum/latest/axum/)、[Rocket](https://rocket.rs/) |
-
-2. `native-tls`はプラットフォームのネイティブセキュリティ機能を指定するが、`rustls`は生粋の`Rust`の実装である。
+| `tokio`       | [Axum](https://docs.rs/axum/latest/axum/)、[Rocket](https://rocket.rs/)、[Poem](https://docs.rs/poem) |
 
 ### 追加機能
 
