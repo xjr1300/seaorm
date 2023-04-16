@@ -8,31 +8,31 @@ Object Relational Mapper(ORM)は、オブジェクト指向プログラミング
 
 Rustで構築されたサービスは軽量で（小さなバイナリサイズ、少ないメモリの使用）、安全で（コンパイル時の保証）、正確で（ユニットテストが十分に設計されている場合）、そして高速（コンパイル時の最適化がランタイムのオーバーヘッドを最小化する）です。
 
-`Rust`は静的で、強く型付けされ、コンパイルされ、スレッドセーフで、ガベージコレクションを持たず、そして型破りなオブジェクト指向言語であるため、`Rust`でORMを操作する方法は、既に親しんでいる他のスクリプト言語とは少し異なります。
+Rustは静的で、強く型付けされ、コンパイルされ、スレッドセーフで、ガベージコレクションを持たず、そして型破りなオブジェクト指向言語であるため、RustでORMを操作する方法は、既に親しんでいる他のスクリプト言語とは少し異なります。
 
-`SeaORM`は、`Rust`でプログラミングする際の問題を回避しながら、上記の利点を享受することを試みています。
+SeaORMは、Rustでプログラミングする際の問題を回避しながら、上記の利点を享受することを試みています。
 
 では、始めましょう。
 
 ## 非同期プログラミング
 
-`Rust`における非同期プログラミングは最近開発され、`Rust 1.39`で安定した。
-非同期エコシステムは急速に進化しており、`SeaORM`は非同期のサポートを念頭にした、ゼロから構築された最初のクレートの1つである。
+Rustにおける非同期プログラミングは最近開発され、Rust`1.39`で安定化されました。
+非同期エコシステムは急速に進化しており、SeaORMは非同期のサポートを念頭に、1から構築された最初のクレートの1つです。
 
-学べき最初の1つは[Future](https://www.sea-ql.org/SeaORM/docs/introduction/async#:~:text=learn%20is%20the-,Future,-trait.%20It%27s%20a)トレイトである。
-`Future`は、将来に計算して何らかの値を返却する関数のプレースホルダーである。
-`Future`は遅延評価されるため、実際に処理するためには、`await`を呼び出す必要がある。
-`Future`はプログラミング労力をほとんどかけずに並行処理を実現できる。
-例えば、`future::join_all`で並行に複数のクエリを実行できる。
+学べき最初の1つは[`Future`](https://www.sea-ql.org/SeaORM/docs/introduction/async#:~:text=learn%20is%20the-,Future,-trait.%20It%27s%20a)トレイトです。
+Futureは、将来、計算して何らかの値を返却する関数のプレースホルダーです。
+Futureは怠惰であるため、それは実際の作業が実施されるために`.await`が呼び出される必要があることを意味しています。
+`Future`は、少しの努力で並行処理を実現させてくれます。
+例えば、並行で複数のクエリを実行するための`future::join_all`があります。
 
-2つ目は`async`で、`Rust`の`async`はシンタックスシュガーを使用した[マルチスレッドプログラミング](https://rust-lang.github.io/async-book/03_async_await/01_chapter.html)である。
-`Future`はスレッド間を移動して、非同期の本体内で使用されるいくつかの変数は、[Send](https://doc.rust-lang.org/nomicon/send-and-sync.html)のようにスレッド間を移動できるうようにする必要がある。
+2つ目に、Rustにおける`async`が、シンタックスシュガーを伴った[マルチスレッドプログラミング](https://rust-lang.github.io/async-book/03_async_await/01_chapter.html)であることです。
+`Future`はスレッド間を移動するかもしれず、よってasync本体で使用される任意の変数は、[Send](https://doc.rust-lang.org/nomicon/send-and-sync.html)のようにスレッド間を移動できる必要があります。
 
-3つ目は、`Rust`に複数の非同期ランタイムが存在することである。
-間違いなく[actix](https://crates.io/crates/actix)、[async-std](https://crates.io/crates/async-std)と[tokio](https://crates.io/crates/tokio)は最も広く利用されている3つである。
-`SeaORM`の基盤となるドライバである[SQLx](https://crates.io/crates/sqlx)は、それら3つすべてをサポートしている。
+3つ目に、`Rust`に複数の非同期ランタイムが存在することです。
+間違いなく[actix](https://crates.io/crates/actix)、[async-std](https://crates.io/crates/async-std)、そして[tokio](https://crates.io/crates/tokio)は最も広く利用されている3つです。
+SeaORMの基盤となるドライバである[SQLx](https://crates.io/crates/sqlx)は、それら3つすべてをサポートしています。
 
-これらの概念を理解することは、非同期に`Rust`を実行するために不可欠である。
+これらの概念を理解することは、非同期`Rust`を使いこなすために不可欠です。
 
 ## SeaORMのコンセプト
 
