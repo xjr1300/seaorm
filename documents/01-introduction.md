@@ -36,19 +36,19 @@ SeaORMの基盤となるドライバである[SQLx](https://crates.io/crates/sql
 
 ## SeaORMのコンセプト
 
-`SeaORM`において、テーブルのコレクションを持つデータベースは、`スキーマ`と呼ばれる。
+SeaORMにおいて、テーブルのコレクションを持つデータベースは、`Schema`と呼んでいます。
 
-`SeaORM`において、それぞれのテーブルは、関連するテーブルの`CRUD`操作を実行する、ある特定の[Entity](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#entity)に対応する。
+SeaORMにおいて、それぞれのテーブルは、関連するテーブルの`CRUD`（作成、読み込み、更新そして削除する）操作を実行する[Entity](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#entity)に対応します。
 
-`Entity`トレイトは、実行時に[Column](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#column)、[Relation](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#relation)や[PrimaryKey](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#primary-key)を検査するための`API`を提供する。
+`Entity`トレイトは、実行時にそのプロパティ[Column](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#column)、[Relation](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#relation)、そして[PrimaryKey](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure#primary-key)を検査する`API`を提供します。
 
-各テーブルは、`属性`として参照される複数の列を持つ。
+それぞれテーブルは、`属性`として参照される複数の列を持ちます。
 
-これらの`属性`とそれらの値は、[Model](https://www.sea-ql.org/SeaORM/docs/generate-entity/expanded-entity-structure#model)と呼ばれる操作可能な`Rust`の構造体にグループ化される。
+これらの`属性`とそれらの値は、それらを操作できる`Rust`の構造体（[Model](https://www.sea-ql.org/SeaORM/docs/generate-entity/expanded-entity-structure#model)）にグループ化されまます。
 
-しかしながら、`Model`は読み込み操作のみ可能である。
-挿入、更新及び削除するために、それぞれの属性のメタデータに付随する[ActiveModel](https://www.sea-ql.org/SeaORM/docs/generate-entity/expanded-entity-structure#active-model)を使用する必要がある。
+しかし、`Model`は読み込み操作のためでにあります。
+挿入、更新または削除するために、それぞれの属性のメタデータを付与した[ActiveModel](https://www.sea-ql.org/SeaORM/docs/generate-entity/expanded-entity-structure#active-model)を使用する必要があります。
 
-最後に、`SeaORM`にはグローバルコンテキストとなるシングルトンは存在しない。
-アプリケーションコードは、[DatabaseConnection](https://www.sea-ql.org/SeaORM/docs/install-and-config/connection)の所有権を管理する責任がある。
-[Rocket](https://github.com/SeaQL/sea-orm/tree/master/examples/rocket_example)、[Actix](https://github.com/SeaQL/sea-orm/tree/master/examples/actix_example)及び[axum](https://github.com/SeaQL/sea-orm/tree/master/examples/axum_example)と統合する例を提供して、迅速に開始できるようにする。
+最後に、`SeaORM`にシングルトン（グローバルコンテキスト）はありません。
+アプリケーションコードは、[DatabaseConnection](https://www.sea-ql.org/SeaORM/docs/install-and-config/connection)の所有権を管理する責任があります。
+[Rocket](https://github.com/SeaQL/sea-orm/tree/master/examples/rocket_example)、[Actix](https://github.com/SeaQL/sea-orm/tree/master/examples/actix_example)、[axum](https://github.com/SeaQL/sea-orm/tree/master/examples/axum_example)、そして[poem](https://github.com/SeaQL/sea-orm/tree/master/examples/poem_example)と統合する例を提供して、早く開始できるようにします。
