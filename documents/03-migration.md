@@ -54,3 +54,47 @@ migration
 
 アプリクレートとマイグレーションクレート間で、SeaORMエンティティを共有するために、次のとおりcargoワークスペースを構造化することを推奨します。
 説明のために[統合例](https://github.com/SeaQL/sea-orm/tree/master/examples)を確認してください。
+
+#### マイグレーションクレート
+
+[sea-orm-migration](https://crates.io/crates/sea-orm-migration)と[async-std](https://crates.io/crates/async-std)クレートをインポートします。
+
+```toml
+# migration/Cargo.toml
+[dependencies]
+async-std = { version = "^1", features = ["attributes", "tokio1"] }
+
+[dependencies.sea-orm-migration]
+version = "^0"
+features = [
+  # CLIを介してマイグレーションを実行するために、少なくとも1つの`ASYNC_RUNTIME`と`DATABASE_DRIVER`フィーチャを有効にしてください。
+  # https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime でサポートされたフィーチャのリストを参照できます。
+  # 例えば
+  # "runtime-tokio-rustls",  # `ASYNC_RUNTIME`フィーチャ
+  # "sqlx-postgres",         # `DATABASE_DRIVER`フィーチャ
+]
+```
+
+マイグレーションを記述します。
+詳細は次の節で説明します。
+
+```rust
+// migration/src/m20220120_000001_create_post_table.rs
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Replace the sample below with your own migration scripts
+        todo!();
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Replace the sample below with your own migration scripts
+        todo!();
+    }
+}
+```
