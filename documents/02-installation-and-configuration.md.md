@@ -94,33 +94,37 @@ sqlx migrate run
 
 ### コネクションプール
 
-データベース接続を得るために、[Database](https://docs.rs/sea-orm/0.5/sea_orm/struct.Database.html)インタフェースを使用する。
+データベースコネクションを取得するために、[Database](https://docs.rs/sea-orm/0.5/sea_orm/struct.Database.html)インタフェースを使用します。
 
 ```rust
 let db: DatabaseConnection = Database::connect("protocol://username:password@host/database").await?;
 ```
 
-`protocol`は、`mysql`、`postgres`または`sqlite`である。
+`protocol:`は、`mysql:`、`postgres:`または`sqlite:`です。
 
-`host`は通常`localhost`で、ドメイン名またはIPアドレスを指定する。
+`host`は、普通`localhost`で、ドメイン名またはIPアドレスです。
 
-内部で、[sqlx::Pool](https://docs.rs/sqlx/0.5.x/sqlx/struct.Pool.html)が作成され、[DatabaseConnection](https://docs.rs/sea-orm/0.5/sea_orm/enum.DatabaseConnection.html)によって所有される。
+内部で、[sqlx::Pool](https://docs.rs/sqlx/0.5.x/sqlx/struct.Pool.html)が作成され、[DatabaseConnection](https://docs.rs/sea-orm/0.5/sea_orm/enum.DatabaseConnection.html)によって所有されます。
 
-`DatabaseConnection`の`execute`または`query_one/all`を呼び出すごとに、プールからコネクションが得られ、解放される。
+`DatabaseConnection`に対して`execute`または`query_one/all`を呼び出すたびに、コネクションがプールから取得されて、解放されます。
 
-複数のクエリが、`await`をつけることで並列に実行される。
+複数のクエリは、それらに対して`await`することで並列に実行されます。
 
-### 接続オプション
+### コネクションオプション
 
-接続を構成するために、[ConnectOptions](https://docs.rs/sea-orm/0.5/sea_orm/struct.ConnectOptions.html)インターフェースを使用する。
+コネクションを構成するために、[ConnectOptions](https://docs.rs/sea-orm/0.5/sea_orm/struct.ConnectOptions.html)インターフェースを使用します。
 
 ```rust
 let mut opt = ConnectOptions::new("protocol://username:password@host/database".to_owned());
 opt.max_connections(100)
     .min_connections(5)
     .connect_timeout(Duration::from_secs(8))
+    .acquire_timeout(Duration::from_secs(8))
     .idle_timeout(Duration::from_secs(8))
-    .sqlx_logging(true);
+    .max_lifetime(Duration::from_secs(8))
+    .sqlx_logging(true)
+    .sqlx_logging_level(log::LevelFilter::Info)
+    .set_schema_search_path("my_schema".into()); // デフォルトのPostgreSQLスキーマを設定
 
 let db = Database::connect(opt).await?;
 ```
