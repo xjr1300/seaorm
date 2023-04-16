@@ -165,3 +165,15 @@ pub async fn main() {
 $ RUST_LOG=debug cargo run 2>&1 | grep sea_orm
 [2021-02-02T20:20:20Z DEBUG sea_orm::driver::sqlx_mysql] SELECT `cake`.`id`, `cake`.`name` FROM `cake` LIMIT 1
 ```
+
+### SQLxログの無効化
+
+コネクションを構成するために、[ConnectOptions](https://docs.rs/sea-orm/*/sea_orm/struct.ConnectOptions.html)インターフェースを使用します。
+
+```rust
+let mut opt = ConnectOptions::new("protocol://username:password@host/database".to_owned());
+opt.sqlx_logging(false) // SQLxログを無効化
+    .sqlx_logging_level(log::LevelFilter::Info); // SQLx logレベルを設定
+
+let db = Database::connect(opt).await?;
+```
