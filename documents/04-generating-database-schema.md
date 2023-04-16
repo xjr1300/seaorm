@@ -148,7 +148,7 @@ assert_eq!(
 ```rust
 pub mod active_enum {
     use sea_orm::entity::prelude::*;
-    
+
     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
     #[sea_orm(schema_name = "public", table_name = "active_enum")]
     pub struct Model {
@@ -157,7 +157,7 @@ pub mod active_enum {
         pub category: Option<Category>,
         pub color: Option<Color>,
     }
-    
+
     #[derive(Debug, Clone, PartialEq, EnumIter, DeriveActiveEnum)]
     #[sea_orm(rs_type = "String", db_type = "String(Some(1))")]
     pub enum Category {
@@ -166,7 +166,7 @@ pub mod active_enum {
         #[sea_orm(string_value = "S")]
         Small,
     }
-    
+
     #[derive(Debug, Clone, PartialEq, EnumIter, DeriveActiveEnum)]
     #[sea_orm(rs_type = "i32", db_type = "Integer")]
     pub enum Color {
@@ -175,10 +175,10 @@ pub mod active_enum {
         #[sea_orm(num_value = 1)]
         White,
     }
-    
+
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
     pub enum Relation {}
-    
+
     impl ActiveModelBehavior for ActiveModel {}
 }
 ```
@@ -220,7 +220,7 @@ assert_eq!(
 ```rust
 pub mod active_enum {
     use sea_orm::entity::prelude::*;
-    
+
     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
     #[sea_orm(schema_name = "public", table_name = "active_enum")]
     pub struct Model {
@@ -228,7 +228,7 @@ pub mod active_enum {
         pub id: i32,
         pub tea: Option<Tea>,
     }
-    
+
     #[derive(Debug, Clone, PartialEq, EnumIter, DeriveActiveEnum)]
     #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "tea")]
     pub enum Tea {
@@ -237,10 +237,10 @@ pub mod active_enum {
         #[sea_orm(string_value = "BreakfastTea")]
         BreakfastTea,
     }
-    
+
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
     pub enum Relation {}
-    
+
     impl ActiveModelBehavior for ActiveModel {}
 }
 ```
@@ -341,5 +341,3 @@ assert_eq!(
     ),
 );
 ```
-
-
