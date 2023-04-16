@@ -129,6 +129,18 @@ opt.max_connections(100)
 let db = Database::connect(opt).await?;
 ```
 
+### コネクションのクローズ
+
+コネクションはドロップ時に自動的に閉じられます。
+明示的にコネクションを閉じるために、`close`メソッドを呼び出します。
+
+```rust
+let db = Database::connect(url).await?;
+
+// ここでコネクションを閉じる
+db.close().await?;
+```
+
 ### デバッグログ
 
 `debug-print`機能を有効にした場合、`SeaORM`は[tracing](https://crates.io/crates/tracing)クレートによりデバッグメッセージをログに出力する。
