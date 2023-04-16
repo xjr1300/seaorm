@@ -1,15 +1,17 @@
 {
-    "cSpell.words": [
-        "autoincrement",
-        "chrono",
-        "cust",
-        "Iden",
-        "rustls",
-        "serde",
-        "sqlx",
-        "struct",
-        "subquery",
-        "testcase",
-        "Testville"
-    ]
+  "cSpell.words": [
+    "autoincrement",
+    "chrono",
+    "cust",
+    "Iden",
+    "jsonrpsee",
+    "rustls",
+    "Seaography",
+    "serde",
+    "sqlx",
+    "struct",
+    "subquery",
+    "testcase",
+    "Testville"
+  ]
 }

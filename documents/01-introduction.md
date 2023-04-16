@@ -52,3 +52,25 @@ SeaORMにおいて、それぞれのテーブルは、関連するテーブル�
 最後に、`SeaORM`にシングルトン（グローバルコンテキスト）はありません。
 アプリケーションコードは、[DatabaseConnection](https://www.sea-ql.org/SeaORM/docs/install-and-config/connection)の所有権を管理する責任があります。
 [Rocket](https://github.com/SeaQL/sea-orm/tree/master/examples/rocket_example)、[Actix](https://github.com/SeaQL/sea-orm/tree/master/examples/actix_example)、[axum](https://github.com/SeaQL/sea-orm/tree/master/examples/axum_example)、そして[poem](https://github.com/SeaQL/sea-orm/tree/master/examples/poem_example)と統合する例を提供して、早く開始できるようにします。
+
+## チュートリアルと例
+
+どのようにSeaORMを使用するかを説明した段階的なチュートリアルが必要であれば、オフィシャルな[SeaORMチュートリアル](https://www.sea-ql.org/sea-orm-tutorial/)を確認してください。
+[コミュニテイ](https://github.com/SeaQL/sea-orm/blob/master/COMMUNITY.md#learning-resources)によって記述されたいくつかのチュートリアルもあります。
+
+いくつかの頻繁にある質問と推奨された手法を[SeaORMクックブック](https://www.sea-ql.org/sea-orm-cookbook/)で確認することもできます。
+
+もし、熱意があり、すぐに使えるものが必要な場合は、SeaQLがコミュニティが貢献したオフィシャルな例のセットを維持しています（歓迎します!）。
+
+* [Actixの例](https://github.com/SeaQL/sea-orm/tree/master/examples/actix_example)
+* [Axumの例](https://github.com/SeaQL/sea-orm/tree/master/examples/axum_example)
+* [GraphQLの例](https://github.com/SeaQL/sea-orm/tree/master/examples/graphql_example)
+* [jsonrpseeの例](https://github.com/SeaQL/sea-orm/tree/master/examples/jsonrpsee_example)
+* [Poemの例](https://github.com/SeaQL/sea-orm/tree/master/examples/poem_example)
+* [Rocketの例](https://github.com/SeaQL/sea-orm/tree/master/examples/rocket_example)
+* [Salvoの例](https://github.com/SeaQL/sea-orm/tree/master/examples/salvo_example)
+* [Tonicの例](https://github.com/SeaQL/sea-orm/tree/master/examples/tonic_example)
+
+もし、広範囲にネストされた関連をクエリするWeb APIを構築する場合、GraphQLサーバーを構築することを検討してください。
+[Seaography](https://www.sea-ql.org/Seaography/)は、SeaORMエンティティを使用してGraphQLリゾルバを構築するGraphQLフレームワークです。
+詳しくは、"[Seaography入門](https://www.sea-ql.org/blog/2022-09-27-getting-started-with-seaography/)"を読んでください。
