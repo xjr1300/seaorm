@@ -131,3 +131,35 @@ SeaORMへの依存を記述します。
 [dependencies]
 sea-orm = { version = "^0" }
 ```
+
+#### アプリクレート
+
+これは、アプリケーションロジックが実行される場所です。
+
+アプリ、エンティティとマイグレーションクレートを含んだワークスペースを作成して、アプリクレートにエンティティクレートをインポートします。
+
+もし、アプリの部分としてマイグレーションユーティリティをまとめたい場合は、マイグレーションクレートもインポートする必要があります。
+
+```toml
+# ./Cargo.toml
+[workspace]
+members = [".", "entity", "migration"]
+
+[dependencies]
+entity = { path = "entity" }
+migration = { path = "migration" } # depends on your needs
+
+[dependencies.sea-orm]
+version = "^0"
+features = [ ... ]
+```
+
+アプリの開始でマイグレーションを実行できます。
+
+```rust
+// src/main.rs
+use migration::{Migrator, MigratorTrait};
+
+let connection = sea_orm::Database::connect(&database_url).await?;
+Migrator::up(&connection, None).await?;
+```
