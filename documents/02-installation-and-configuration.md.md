@@ -141,12 +141,12 @@ let db = Database::connect(url).await?;
 db.close().await?;
 ```
 
-### デバッグログ
+## デバッグログ
 
-`debug-print`機能を有効にした場合、`SeaORM`は[tracing](https://crates.io/crates/tracing)クレートによりデバッグメッセージをログに出力する。
+SeaORM（`debug-print`フィーチャを有効にした）は、[tracing](https://crates.io/crates/tracing)クレートを介してデバッグメッセージをログに出力します。
 
-デバッグログを捕捉して閲覧するために[tracing-subscriber](https://crates.io/crates/tracing-subscriber)を設定する必要がある。
-下記のスニペットと[完全な例](https://github.com/SeaQL/sea-orm/blob/master/examples/actix_example/src/main.rs)を参照しなさい。
+デバッグログを捕捉して参照するために[tracing-subscriber](https://crates.io/crates/tracing-subscriber)を設定する必要があります。
+したのスニペットと[ここ](https://github.com/SeaQL/sea-orm/blob/master/examples/actix_example/src/main.rs)の完全な例を参照してください。
 
 ```rust
 pub async fn main() {
@@ -154,11 +154,12 @@ pub async fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .with_test_writer()
         .init();
+
     // ...
 }
 ```
 
-`SeaORM`から出力されるデバッグログは、以下の通りフィルタできる。
+`sea_orm`でデバッグログをフィルタできます。
 
 ```bash
 $ RUST_LOG=debug cargo run 2>&1 | grep sea_orm
