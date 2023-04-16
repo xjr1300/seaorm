@@ -51,8 +51,16 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 
 ### 追加機能
 
-* `debug-print` - ロガーにすべてのSQL文を出力する。
-* `mock` - ユニットテスト用のモックインタフェースである。
+* `debug-print` - ロガーにすべてのSQL文を出力
+* `mock` - ユニットテスト用のモックインタフェース
+* `macros` - 便利な手続き型マクロ
+* `with-chrono` - [chrono](https://crates.io/crates/chrono)型サポート
+* `with-time` - [time](https://crates.io/crates/time)型サポート
+* `with-json` - [serde-json](https://crates.io/crates/serde-json)型サポート
+* `with-rust-decimal` - [rust_decimal](https://crates.io/crates/rust_decimal)型サポート
+* `with-bigdecimal` - [bigdecimal](https://crates.io/crates/bigdecimal)型サポート
+* `postgres-array` - Postgresの配列型サポート
+* `sea-orm-internal` - 安定していない内部API（再エクスポートしたSQLx型にアクセスするために）を導入
 
 ## スキーマ管理
 
