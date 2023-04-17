@@ -2,6 +2,7 @@
   "cSpell.words": [
     "autoincrement",
     "bigdecimal",
+    "bytea",
     "chrono",
     "cust",
     "HHMMSS",
@@ -11,11 +12,13 @@
     "Seaography",
     "seaql",
     "serde",
+    "smallint",
     "sqlx",
     "struct",
     "subquery",
     "testcase",
     "Testville",
+    "tinyint",
     "varchar"
   ]
 }
