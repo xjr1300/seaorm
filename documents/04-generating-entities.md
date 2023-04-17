@@ -16,6 +16,8 @@
       - [選択と保存で列の型をキャストする](#選択と保存で列の型をキャストする)
     - [プライマリーキー](#プライマリーキー)
       - [自動インクリメント](#自動インクリメント)
+      - [複合キー](#複合キー)
+    - [関連](#関連)
 
 ## `sea-orm-cli`を使用する
 
@@ -275,3 +277,41 @@ pub id: i32
 #[sea_orm(primary_key, auto_increment = false)]
 pub id: i32
 ```
+
+#### 複合キー
+
+2つの列のタプルをプライマリーキーとして使用することは、連想（結合、中間）テーブル (junction table)では普通です。
+単に、複合プライマリキーを定義するために複数の列に注釈します。
+複合キーの場合、デフォルトで`auto_increment`は`false`です。
+
+```rust
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub cake_id: i32,
+    #[sea_orm(primary_key)]
+    pub fruit_id: i32,
+}
+```
+
+### 関連
+
+`DeriveRelation`は、[RelationTrait](https://docs.rs/sea-orm/*/sea_orm/entity/trait.RelationTrait.html)の実装を支援するマクロです。
+
+```rust
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {
+    #[sea_orm(has_many = "super::fruit::Entity")]
+    Fruit,
+}
+```
+
+もし、関連がないのであれば、単純に記述できます。
+
+```rust
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
+```
+
+[Related](https://docs.rs/sea-orm/*/sea_orm/entity/trait.Related.html)トレイトはエンティティ同士を接続するため、両方のエンティティを選択するクエリを構築できます。
+
+関連の詳細については、[Relation](https://www.sea-ql.org/SeaORM/docs/relation/one-to-one/)の章を参照してください。
