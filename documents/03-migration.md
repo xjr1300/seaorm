@@ -1,5 +1,39 @@
 # マイグレーション
 
+- [マイグレーション](#マイグレーション)
+  - [マイグレーションの設定](#マイグレーションの設定)
+    - [テーブルのマイグレーション](#テーブルのマイグレーション)
+    - [マイグレーションディレクトリの作成](#マイグレーションディレクトリの作成)
+    - [ワークスペースの構造](#ワークスペースの構造)
+      - [マイグレーションクレート](#マイグレーションクレート)
+      - [エンティティクレート](#エンティティクレート)
+      - [アプリクレート](#アプリクレート)
+  - [マイグレーションの記述](#マイグレーションの記述)
+    - [マイグレーションの作成](#マイグレーションの作成)
+    - [マイグレーションの定義](#マイグレーションの定義)
+      - [SeaQuery](#seaquery)
+        - [スキーマ作成メソッド](#スキーマ作成メソッド)
+        - [テーブルの作成](#テーブルの作成)
+        - [インデックスの作成](#インデックスの作成)
+        - [外部キーの作成](#外部キーの作成)
+        - [データ型の作成（PostgreSQLのみ）](#データ型の作成postgresqlのみ)
+        - [スキーマ変更メソッド](#スキーマ変更メソッド)
+        - [テーブル削除](#テーブル削除)
+        - [テーブル変更](#テーブル変更)
+        - [テーブル名変更](#テーブル名変更)
+        - [テーブル行削除（`Truncate`）](#テーブル行削除truncate)
+        - [インデックス削除](#インデックス削除)
+        - [外部キー削除](#外部キー削除)
+        - [データ型変更（PostgreSQLのみ）](#データ型変更postgresqlのみ)
+        - [データ型削除（PostgreSQLのみ）](#データ型削除postgresqlのみ)
+        - [スキーマ検証メソッド](#スキーマ検証メソッド)
+        - [テーブル存在確認](#テーブル存在確認)
+        - [列存在確認](#列存在確認)
+    - [複数のスキーマの変更を1つのマイグレーションに結合](#複数のスキーマの変更を1つのマイグレーションに結合)
+      - [Raw SQL](#raw-sql)
+    - [アトミックなマイグレーション](#アトミックなマイグレーション)
+    - [スキーマファースト、それともエンティティファースト?](#スキーマファーストそれともエンティティファースト)
+
 ## マイグレーションの設定
 
 > もし、既にテーブルとスキーマのあるデータベースがある場合、この章をスキップして、[SeaORMのエンティティの生成](https://www.sea-ql.org/SeaORM/docs/generate-entity/sea-orm-cli/)に移動できます。
@@ -258,7 +292,7 @@ assert_eq!(Post::Text.to_string(), "text");
 
 ##### スキーマ作成メソッド
 
-* テーブルの作成
+##### テーブルの作成
 
 ```rust
 use sea_orm::{EnumIter, Iterable};
@@ -311,19 +345,19 @@ manager
     .await
 ```
 
-* インデックスの作成
+##### インデックスの作成
 
 ```rust
 manager.create_index(sea_query::Index::create()..)
 ```
 
-* 外部キーの作成
+##### 外部キーの作成
 
 ```rust
 manager.create_foreign_key(sea_query::ForeignKey::create()..)
 ```
 
-* データ型の作成（PostgreSQLのみ）
+##### データ型の作成（PostgreSQLのみ）
 
 ```rust
 use sea_orm::{EnumIter, Iterable};
@@ -355,7 +389,7 @@ manager
 
 ##### スキーマ変更メソッド
 
-* テーブル削除
+##### テーブル削除
 
 ```rust
 use entity::post;
@@ -363,43 +397,43 @@ use entity::post;
 manager.drop_table(sea_query::Table::drop()..)
 ```
 
-* テーブル変更
+##### テーブル変更
 
 ```rust
 manager.alter_table(sea_query::Table::alter()..)
 ```
 
-* テーブル名変更
+##### テーブル名変更
 
 ```rust
 manager.rename_table(sea_query::Table::rename()..)
 ```
 
-* テーブル行削除（`Truncate`）
+##### テーブル行削除（`Truncate`）
 
 ```rust
 manager.truncate_table(sea_query::Table::truncate()..)
 ```
 
-* インデックス削除
+##### インデックス削除
 
 ```rust
 manager.drop_index(sea_query::Index::drop()..)
 ```
 
-* 外部キー削除
+##### 外部キー削除
 
 ```rust
 manager.drop_foreign_key(sea_query::ForeignKey::drop()..)
 ```
 
-* データ型変更（PostgreSQLのみ）
+##### データ型変更（PostgreSQLのみ）
 
 ```rust
 manager.alter_type(sea_query::Type::alter()..)
 ```
 
-* データ型削除（PostgreSQLのみ）
+##### データ型削除（PostgreSQLのみ）
 
 ```rust
 manager.drop_type(sea_query::Type::drop()..)
@@ -407,19 +441,19 @@ manager.drop_type(sea_query::Type::drop()..)
 
 ##### スキーマ検証メソッド
 
-* テーブル存在確認
+##### テーブル存在確認
 
 ```rust
 manager.has_table(table_name)
 ```
 
-* 列存在確認
+##### 列存在確認
 
 ```rust
 manager.has_column(table_name, column_name)
 ```
 
-## 複数のスキーマの変更を1つのマイグレーションに結合
+### 複数のスキーマの変更を1つのマイグレーションに結合
 
 `up`と`down`の両方のマイグレーション関数で、複数の変更を結合できます。
 ここに完全な例を示します。
@@ -470,7 +504,7 @@ async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
 }
 ```
 
-### Raw SQL
+#### Raw SQL
 
 SQL文でマイグレーションファイルを記述できますが、SeaQueryが提供する複数バックエンドの互換性を失います。
 
@@ -516,7 +550,7 @@ impl MigrationTrait for Migration {
 }
 ```
 
-## アトミックなマイグレーション
+### アトミックなマイグレーション
 
 Postgresにおいて、マイグレーションはアトミックで実行され、それはマイグレーションファイルがトランザクション内で実行されることを意味しています。
 もし、マイグレーションが失敗した場合、データベースへの変更はロールバックされます。
@@ -524,7 +558,7 @@ Postgresにおいて、マイグレーションはアトミックで実行され
 
 新しく作成されたテーブルに[サンプルデータを与える](https://www.sea-ql.org/SeaORM/docs/migration/seeding-data/#seeding-data-transactionally)のような操作を実行するために、それぞれのマイグレーション内でトランザクションを開始できます。
 
-## スキーマファースト、それともエンティティファースト?
+### スキーマファースト、それともエンティティファースト?
 
 大局からみれば、スキーマファーストを推奨します。最初にマイグレーションを記述して、実際のデータベースからエンティティを生成します。
 
