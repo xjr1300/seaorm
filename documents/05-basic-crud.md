@@ -1,5 +1,51 @@
 # CRUDの基本
 
+- [CRUDの基本](#crudの基本)
+  - [スキーマの基本](#スキーマの基本)
+  - [選択 (SELECT)](#選択-select)
+    - [プライマリーキーによる検索](#プライマリーキーによる検索)
+    - [条件と順番を伴って検索](#条件と順番を伴って検索)
+    - [関連したモデルの検索](#関連したモデルの検索)
+      - [遅延読み込み](#遅延読み込み)
+      - [貪欲な読み込み(Eager Loading)](#貪欲な読み込みeager-loading)
+        - [1対1](#1対1)
+        - [1対多／多対多](#1対多多対多)
+      - [バッチ読み込み](#バッチ読み込み)
+        - [1対1](#1対1-1)
+        - [1対多](#1対多)
+        - [多対多](#多対多)
+    - [結果のページネート](#結果のページネート)
+    - [カーソルページネーション](#カーソルページネーション)
+    - [カスタムな選択](#カスタムな選択)
+  - [挿入](#挿入)
+    - [ActiveValue](#activevalue)
+    - [ModelとActiveModel](#modelとactivemodel)
+      - [JSON値からActiveModelを設定](#json値からactivemodelを設定)
+    - [ActiveModelが変更されているか確認する](#activemodelが変更されているか確認する)
+    - [ActiveModelをModelに変換する（戻す）](#activemodelをmodelに変換する戻す)
+    - [1行挿入する](#1行挿入する)
+    - [多くの行の挿入する](#多くの行の挿入する)
+    - [競合](#競合)
+  - [更新](#更新)
+    - [1行更新する](#1行更新する)
+    - [複数行更新する](#複数行更新する)
+  - [保存](#保存)
+    - [保存の振る舞い](#保存の振る舞い)
+    - [使用方法](#使用方法)
+  - [削除](#削除)
+    - [1行削除する](#1行削除する)
+    - [プライマリーキーで削除する](#プライマリーキーで削除する)
+    - [複数行削除する](#複数行削除する)
+  - [JSON](#json)
+    - [JSONの結果を選択](#jsonの結果を選択)
+  - [ネイティブなSQL (Raw SQL)](#ネイティブなsql-raw-sql)
+    - [SQLでクエリする](#sqlでクエリする)
+    - [SQLクエリの取得](#sqlクエリの取得)
+    - [SQLクエリの使用とインターフェースの実行](#sqlクエリの使用とインターフェースの実行)
+      - [`query_one`と`query_all`メソッドを使用したカスタム結果の取得](#query_oneとquery_allメソッドを使用したカスタム結果の取得)
+      - [`execute`メソッドを使用したクエリの実行](#executeメソッドを使用したクエリの実行)
+    - [準備されていないSQL文の実行](#準備されていないsql文の実行)
+
 ## スキーマの基本
 
 説明のために[基本的なスキーマ](https://github.com/SeaQL/sea-orm/tree/master/src/tests_cfg)を使用します。
@@ -652,7 +698,7 @@ while let Some(cakes) = cake_pages.fetch_and_next().await? {
 
 ### SQLでクエリする
 
-MySQLとSQLiteは`?`で、PostgreSQLは`$N`で、 パラメータをバインドする適切なパラメーターを使用することで、SQLでモデルを選択できる。
+MySQLとSQLiteは`?`で、PostgreSQLは`$N`で、 パラメータをバインドする適切な構文を使用することで、ネイティブなSQLで`Model`を選択できます。
 
 ```rust
 let cheese: Option<cake::Model> = cake::Entity::find()
@@ -665,8 +711,8 @@ let cheese: Option<cake::Model> = cake::Entity::find()
     .await?;
 ```
 
-また、カスタムモデルを選択できる。
-ここで、ケーキからすべてのユニークな名前を選択する。
+また、カスタムモデルを選択することもできます。
+ここで、ケーキからすべてのユニークな名前を選択します。
 
 ```rust
 #[derive(Debug, FromQueryResult)]
@@ -677,15 +723,43 @@ pub struct UniqueCake {
 let unique: Vec<UniqueCake> = UniqueCake::find_by_statement(Statement::from_sql_and_values(
         DbBackend::Postgres,
         r#"SELECT "cake"."name" FROM "cake" GROUP BY "cake"."name"#,
-        vec![],
+        [],
     ))
     .all(&db)
     .await?;
 ```
 
+もし、モデルがそのように見えるか事前にわからない場合、`JsonValue`を使用できます。
+
+```rust
+let unique: Vec<JsonValue> = JsonValue::find_by_statement(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        r#"SELECT "cake"."name" FROM "cake" GROUP BY "cake"."name"#,
+        [],
+    ))
+    .all(&db)
+    .await?;
+```
+
+バッチで、[SelectorRaw](https://docs.rs/sea-orm/*/sea_orm/struct.SelectorRaw.html)をページネートして、`Model`を取得できます。
+
+```rust
+let mut cake_pages = cake::Entity::find()
+    .from_raw_sql(Statement::from_sql_and_values(
+        DbBackend::Postgres,
+        r#"SELECT "cake"."id", "cake"."name" FROM "cake" WHERE "id" = $1"#,
+        [1.into()],
+    ))
+    .paginate(db, 50);
+
+while let Some(cakes) = cake_pages.fetch_and_next().await? {
+    // Vec<cake::Model>型のcakesで何かする。
+}
+```
+
 ### SQLクエリの取得
 
-いずれかのCRUD操作で`build`と`to_string`メソッドを使用して、デバッグ目的でデータベース特有のSQLを取得できる。
+デバッグ目的でデータベース特有のSQLを得るために、任意のCRUD操作で`build`と`to_string`メソッドを使用できます。
 
 ```rust
 use sea_orm::DatabaseBackend;
@@ -701,11 +775,11 @@ assert_eq!(
 );
 ```
 
-## SQLクエリの使用と実行インターフェース
+### SQLクエリの使用とインターフェースの実行
 
-`sea-query`を使用してSQL文を生成して、SeaORM内の`DatabaseConnection`インターフェースを介して、SQL文による問い合わせや実行することができる。
+`sea-query`を使用してSQL文を構築して、SeaORM内の`DatabaseConnection`インターフェースでそれを直接問い合わせ／実行できます。
 
-### `query_one`と`query_all`メソッドを使用した結果の取得
+#### `query_one`と`query_all`メソッドを使用したカスタム結果の取得
 
 ```rust
 let query_res: Option<QueryResult> = db
@@ -725,7 +799,7 @@ let query_res_vec: Vec<QueryResult> = db
     .await?;
 ```
 
-## `execute`メソッドを使用したクエリの実行
+#### `execute`メソッドを使用したクエリの実行
 
 ```rust
 let exec_res: ExecResult = db
@@ -735,4 +809,13 @@ let exec_res: ExecResult = db
     ))
     .await?;
 assert_eq!(exec_res.rows_affected(), 1);
+```
+
+### 準備されていないSQL文の実行
+
+[ConnectionTrait::execute_unprepared](https://docs.rs/sea-orm/*/sea_orm/trait.ConnectionTrait.html#tymethod.execute_unprepared)で準備されていないSQL文を実行できます。
+
+```rust
+let exec_res: ExecResult =
+    db.execute_unprepared("CREATE EXTENSION IF NOT EXISTS citext").await?;
 ```
