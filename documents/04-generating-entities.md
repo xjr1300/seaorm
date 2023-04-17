@@ -25,6 +25,8 @@
       - [追加の属性](#追加の属性)
       - [選択と保存における列型のキャスト](#選択と保存における列型のキャスト)
     - [プライマリーキー](#プライマリーキー-1)
+    - [モデル](#モデル)
+      - [NULL許可属性](#null許可属性)
 
 ## `sea-orm-cli`を使用する
 
@@ -530,5 +532,28 @@ impl PrimaryKeyTrait for PrimaryKey {
     fn auto_increment() -> bool {
         false
     }
+}
+```
+
+### モデル
+
+クエリの結果を保存するRustの構造体です。
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq, DeriveModel, DeriveActiveModel)]
+pub struct Model {
+    pub id: i32,
+    pub name: String,
+}
+```
+
+#### NULL許可属性
+
+テーブルの列がNULLを許容する場合、それを`Option`でラップします。
+
+```rust
+pub struct Model {
+    pub id: i32,
+    pub name: Option<String>,
 }
 ```
