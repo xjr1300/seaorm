@@ -40,6 +40,7 @@
     - [プログラムによるマイグレーション](#プログラムによるマイグレーション)
     - [任意のPostgreSQLスキーマでマイグレーションを適用](#任意のpostgresqlスキーマでマイグレーションを適用)
   - [データを与える](#データを与える)
+    - [トランザクションでデータを与える](#トランザクションでデータを与える)
 
 ## マイグレーションの設定
 
@@ -725,5 +726,35 @@ pub enum Cake {
     Table,
     Id,
     Name,
+}
+```
+
+### トランザクションでデータを与える
+
+マイグレーションの`up`と`down`内で、トランザクションとSQLを実行します。
+
+```rust
+use sea_orm_migration::sea_orm::{entity::*, query::*};
+
+// ...
+
+#[async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // コネクションを取得してトランザクションを開始
+        let db = manager.get_connection();
+        let transaction = db.begin().await?;
+        // トランザクションコネクションで挿入
+        cake::ActiveModel {
+            name: Set("Cheesecake".to_owned()),
+            ..Default::default()
+        }
+        .insert(&transaction)
+        .await?;
+        // トランザクションをコミット
+        transaction.commit().await?;
+
+        Ok(())
+    }
 }
 ```
