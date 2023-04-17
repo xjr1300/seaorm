@@ -187,56 +187,166 @@ let rows = cake_filling::Entity::find()
 
 ## 挿入
 
-SeaORMの挿入を深掘りする前に、`ActiveValue`と`ActiveModel`を紹介する。
+SeaORMの挿入に深入りする前に、`ActiveValue`と`ActiveModel`を説明する必要があります。
 
 ### ActiveValue
 
-`ActiveModel`属性になされた変更を捉えるラッパー構造体である。
+`ActiveModel`属性にされた変更をキャプチャーするためのラッパー構造体です。
 
 ```rust
-use sea_orm::ActiveValue::NotSet;
+use sea_orm::ActiveValue::{Set, NotSet, Unchanged};
 
-// Set value
+// 設定した値
 let _: ActiveValue<i32> = Set(10);
 
-// NotSet value
+// NotSet値
 let _: ActiveValue<i32> = NotSet;
+
+// `変更されていない`ことを示す値
+let v: ActiveValue<i32> = Unchanged(10);
+
+// `変更されていない`ことを示す現在の値を`Set`した値に変換
+assert!(v.reset(), Set(10));
 ```
 
 ### ModelとActiveModel
 
-`ActiveModel`は`ActiveValue`にラップされたモデルのすべての属性を持つ。
+`ActiveModel`は`ActiveValue`にラップされた`Model`のすべての属性を持ちます。
 
-ActiveModelを使用して、列のサブセットが設定された行を挿入できる。
+列集合の部分集合で行を挿入するために、`ActiveModel`を使用できます。
 
 ```rust
 let cheese: Option<cake::Model> = Cake::find_by_id(1).one(db).await?;
 
-// Get Model
+// モデルを取得
 let model: cake::Model = cheese.unwrap();
 assert_eq!(model.name, "Cheese Cake".to_owned());
 
-// Into ActiveModel
+// ActiveModelに入れる
 let active_model: cake::ActiveModel = model.into();
 assert_eq!(active_model.name, ActiveValue::unchanged("Cheese Cake".to_owned()));
 ```
 
-### 1行挿入
+#### JSON値からActiveModelを設定
 
-`ActiveModel`を挿入して最新の`Model`を得る。
-`Model`の値はデータベースから取得されており、自動生成フィールドが生成される。
+もし、ユーザー入力をデータベースに保存したい場合、簡単にJSON値を`ActiveModel`変換できます。
+JSONのプライマリーキーの[デシリアライズをスキップ](https://serde.rs/attr-skip-serializing.html)したい場合は、次の通りそれを設定できることに注意してください。
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
+#[sea_orm(table_name = "fruit")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    #[serde(skip_deserializing)] // デシリアライズをスキップ
+    pub id: i32,
+    pub name: String,
+    pub cake_id: Option<i32>,
+}
+```
+
+`set_from_json`メソッドで`ActiveModel`の属性を設定します。
+
+```rust
+// プライマリーキーが設定されたActiveModel
+let mut fruit = fruit::ActiveModel {
+    id: ActiveValue::Set(1),
+    name: ActiveValue::NotSet,
+    cake_id: ActiveValue::NotSet,
+};
+
+// このメソッドはActiveModelのプライマリーキーの値を変更しないことに注意
+fruit.set_from_json(json!({
+    "id": 8,
+    "name": "Apple",
+    "cake_id": 1,
+}))?;
+
+assert_eq!(
+    fruit,
+    fruit::ActiveModel {
+        id: ActiveValue::Set(1),    // 上で8を設定したにも関わらず、最初に設定した1が設定されている
+        name: ActiveValue::Set("Apple".to_owned()),
+        cake_id: ActiveValue::Set(Some(1)),
+    }
+);
+```
+
+`from_json`メソッドで、JSON値から新しい`ActiveModel`を作成します。
+
+```rust
+let fruit = fruit::ActiveModel::from_json(json!({
+    "name": "Apple",
+}))?;
+
+assert_eq!(
+    fruit,
+    fruit::ActiveModel {
+        id: ActiveValue::NotSet,
+        name: ActiveValue::Set("Apple".to_owned()),
+        cake_id: ActiveValue::NotSet,
+    }
+);
+```
+
+### ActiveModelが変更されているか確認する
+
+[is_changed](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/trait.ActiveModelTrait.html#method.is_changed)メソッドで`ActiveModel`の任意のフィールドが`Set`されているか確認できます。
+
+```rust
+let mut fruit: fruit::ActiveModel = Default::default();
+assert!(!fruit.is_changed());
+
+fruit.set(fruit::Column::Name, "apple".into());
+assert!(fruit.is_changed());
+```
+
+### ActiveModelをModelに変換する（戻す）
+
+[try_into_model](https://docs.rs/sea-orm/*/sea_orm/entity/trait.TryIntoModel.html#tymethod.try_into_model)メソッドを使用して、`ActiveModel`から`Model`に戻せます。
+
+```rust
+assert_eq!(
+    ActiveModel {
+        id: Set(2),
+        name: Set("Apple".to_owned()),
+        cake_id: Set(Some(1)),
+    }
+    .try_into_model()
+    .unwrap(),
+    Model {
+        id: 2,
+        name: "Apple".to_owned(),
+        cake_id: Some(1),
+    }
+);
+
+assert_eq!(
+    ActiveModel {
+        id: Set(1),
+        name: NotSet,
+        cake_id: Set(None),
+    }
+    .try_into_model(),
+    Err(DbErr::AttrNotSet(String::from("name")))
+);
+```
+
+### 1行挿入する
+
+`ActiveModel`を挿入して、新たな`Model`を取り戻します。
+データベースから返却されたその値は、任意の自動生成されたフィールドはすべて入力されています。
 
 ```rust
 let pear = fruit::ActiveModel {
     name: Set("Pear".to_owned()),
-    ..Default::default() // all other attributes are `NotSet`
+    ..Default::default() // 他のすべての値は`NotSet`
 };
 
 let pear: fruit::Model = pear.insert(db).await?;
 ```
 
-`ActiveModel`を挿入して、最後に挿入したIDを取得する。
-IDは`Model`のプライマリーキーの型にマッチしており、モデルが複合キーを持つ場合はタプルになる。
+`ActiveModel`を挿入して、最後に挿入したIDを取得します。
+その型はモデルのプライマリーキーの型にマッチするため、もしモデルが複合プライマリーキーを持つ場合、タプルになります。
 
 ```rust
 let pear = fruit::ActiveModel {
@@ -248,9 +358,9 @@ let res: InsertResult = fruit::Entity::insert(pear).exec(db).await?;
 assert_eq!(res.last_insert_id, 28)
 ```
 
-### 多くの行の挿入
+### 多くの行の挿入する
 
-多くの`ActiveModel`を挿入して最後に挿入されたIDを取得する。
+多くの`ActiveModel`を挿入して、最後に挿入されたIDを取得します。
 
 ```rust
 let apple = fruit::ActiveModel {
@@ -263,8 +373,92 @@ let orange = fruit::ActiveModel {
     ..Default::default()
 };
 
-let res: InsertResult = Fruit::insert_many(vec![apple, orange]).exec(db).await?;
+let res: InsertResult = Fruit::insert_many([apple, orange]).exec(db).await?;
 assert_eq!(res.last_insert_id, 30)
+```
+
+### 競合
+
+競合する振る舞いを起こす`ActiveMode`を挿入します。
+
+```rust
+let orange = cake::ActiveModel {
+    id: ActiveValue::set(2),
+    name: ActiveValue::set("Orange".to_owned()),
+};
+
+assert_eq!(
+    cake::Entity::insert(orange.clone())
+        .on_conflict(
+            // 競合で何もしない
+            sea_query::OnConflict::column(cake::Column::Name)
+                .do_nothing()
+                .to_owned()
+        )
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"INSERT INTO "cake" ("id", "name") VALUES (2, 'Orange') ON CONFLICT ("name") DO NOTHING"#,
+);
+
+assert_eq!(
+    cake::Entity::insert(orange)
+        .on_conflict(
+            // 競合で更新
+            sea_query::OnConflict::column(cake::Column::Name)
+                .update_column(cake::Column::Name)
+                .to_owned()
+        )
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"INSERT INTO "cake" ("id", "name") VALUES (2, 'Orange') ON CONFLICT ("name") DO UPDATE SET "name" = "excluded"."name""#,
+);
+```
+
+挿入したり、任意の行を更新することのないUPSERT文を実行は、`DbErr::RecordNotInserted`エラーの結果になります。
+
+```rust
+// `id`列が競合する値のとき、何もしない
+let on_conflict = OnConflict::column(Column::Id).do_nothing().to_owned();
+
+// `1`、`2`、`3`をテーブルに挿入
+let res = Entity::insert_many([
+    ActiveModel { id: Set(1) },
+    ActiveModel { id: Set(2) },
+    ActiveModel { id: Set(3) },
+])
+.on_conflict(on_conflict.clone())
+.exec(db)
+.await;
+
+assert_eq!(res?.last_insert_id, 3);
+
+// 前の3つの行と一緒に、`4`をテーブルに挿入
+let res = Entity::insert_many([
+    ActiveModel { id: Set(1) },
+    ActiveModel { id: Set(2) },
+    ActiveModel { id: Set(3) },
+    ActiveModel { id: Set(4) },
+])
+.on_conflict(on_conflict.clone())
+.exec(db)
+.await;
+
+assert_eq!(res?.last_insert_id, 4);
+
+// 最後の挿入を報告します。
+// すべて4つの行が既に存在されているため、これは本質的に何もしません。
+// `DbErr::RecordNotInserted`エラーがスローされるでしょう。
+let res = Entity::insert_many([
+    ActiveModel { id: Set(1) },
+    ActiveModel { id: Set(2) },
+    ActiveModel { id: Set(3) },
+    ActiveModel { id: Set(4) },
+])
+.on_conflict(on_conflict)
+.exec(db)
+.await;
+
+assert_eq!(res.err(), Some(DbErr::RecordNotInserted));
 ```
 
 ## 更新
