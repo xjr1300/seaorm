@@ -12,6 +12,7 @@
       - [列名](#列名)
       - [列の型](#列の型)
       - [追加のプロパティ](#追加のプロパティ)
+      - [属性の無視](#属性の無視)
 
 ## `sea-orm-cli`を使用する
 
@@ -232,3 +233,12 @@ pub struct Model {
 `default_value`、`unique`、`indexed`そして`nullable`の追加属性を列に追加できます。
 
 オプションの属性にカスタムな`column_type`を指定した場合、`nullable`も指定しなければなりません。
+
+#### 属性の無視
+
+データベースのどの列にもマッピングしないような特定のモデルの属性を無視する場合、`ignore`注釈を使用的ます。
+
+```rust
+#[sea_orm(ignore)]
+pub ignore_me: String
+```
