@@ -27,6 +27,8 @@
     - [プライマリーキー](#プライマリーキー-1)
     - [モデル](#モデル)
       - [NULL許可属性](#null許可属性)
+    - [アクティブモデル](#アクティブモデル)
+    - [関連](#関連-1)
 
 ## `sea-orm-cli`を使用する
 
@@ -557,3 +559,35 @@ pub struct Model {
     pub name: Option<String>,
 }
 ```
+
+### アクティブモデル
+
+`ActiveModel`はそれと対応する`Model`のすべての属性を持ちますが、すべての属性は[ActiveValue](https://docs.rs/sea-orm/*/sea_orm/entity/enum.ActiveValue.html)でラップされています。
+
+```rust
+#[derive(Clone, Debug, PartialEq)]
+pub struct ActiveModel {
+    pub id: ActiveValue<i32>,
+    pub name: ActiveValue<Option<String>>,
+}
+```
+
+### 関連
+
+他のエンティティとの関連を指定します。
+
+```rust
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {
+    Fruit,
+}
+
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Self::Fruit => Entity::has_many(super::fruit::Entity).into(),
+        }
+    }
+}
+```
+
