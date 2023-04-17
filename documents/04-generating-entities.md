@@ -11,6 +11,7 @@
     - [列](#列)
       - [列名](#列名)
       - [列の型](#列の型)
+      - [追加のプロパティ](#追加のプロパティ)
 
 ## `sea-orm-cli`を使用する
 
@@ -225,3 +226,9 @@ pub struct Model {
     pub strings: Vec<String>,
 }
 ```
+
+#### 追加のプロパティ
+
+`default_value`、`unique`、`indexed`そして`nullable`の追加属性を列に追加できます。
+
+オプションの属性にカスタムな`column_type`を指定した場合、`nullable`も指定しなければなりません。
