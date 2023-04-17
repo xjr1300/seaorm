@@ -39,6 +39,7 @@
       - [SeaSchemaマイグレーターCLIによって](#seaschemaマイグレーターcliによって)
     - [プログラムによるマイグレーション](#プログラムによるマイグレーション)
     - [任意のPostgreSQLスキーマでマイグレーションを適用](#任意のpostgresqlスキーマでマイグレーションを適用)
+  - [データを与える](#データを与える)
 
 ## マイグレーションの設定
 
@@ -669,4 +670,60 @@ let connect_options = ConnectOptions::new("postgres://root:root@localhost/databa
 let db = Database::connect(connect_options).await?
 
 migration::Migrator::up(&db, None).await?;
+```
+
+## データを与える
+
+`SchemaManager`から`DbConn`を取得して、例えばデータを与えるために、必要に応じてデータの操作を実行できます。
+
+```rust
+use sea_orm_migration::sea_orm::{entity::*, query::*};
+
+// ...
+
+#[async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let db = manager.get_connection();
+        cake::ActiveModel {
+            name: Set("Cheesecake".to_owned()),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?;
+
+        Ok(())
+    }
+}
+```
+
+また、テーブルに（データを）与えるためにSeaQuery文を記述することもできます。
+
+```rust
+use sea_orm_migration::sea_orm::{entity::*, query::*};
+
+// ...
+
+#[async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let insert = Query::insert()
+            .into_table(Cake::Table)
+            .columns([Cake::Name])
+            .values_panic(["Tiramisu".into()])
+            .to_owned();
+
+        manager.exec_stmt(insert).await?;
+
+        Ok(())
+    }
+}
+
+/// 詳細はhttps://docs.rs/sea-query#iden
+#[derive(Iden)]
+pub enum Cake {
+    Table,
+    Id,
+    Name,
+}
 ```
