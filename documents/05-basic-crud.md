@@ -524,34 +524,34 @@ Fruit::update_many()
 
 ## 保存
 
-`save`メソッドは、データベースに`ActiveModel`を挿入または更新する保存するヘルパーメソッドである。
+これ（`save`メソッド）は、（挿入／更新した）アクティブモデルをデータベースに保存するためのヘルパーメソッドです。
 
 ### 保存の振る舞い
 
-`ActiveModel`を保存するとき、プライマリキー属性によって挿入または更新のどちらかが実行される。
+`ActiveModel`を保存するとき、プライマリーキー属性に依存して、挿入または更新のとちらかが実行されます。
 
-* プライマリーキーが`NotSet`の場合は挿入
-* プライマリキーが`Set`または`Unchanged`の場合は更新
+- プライマリーキーが`NotSet`の場合は挿入
+- プライマリーキーが`Set`または`Unchanged`の場合は更新
 
 ### 使用方法
 
-`save`メソッドを呼び出すと`ActiveModel`を挿入または更新する。
+`ActiveModel`を挿入または更新するために`save`メソッドを呼び出します。
 
 ```rust
 use sea_orm::ActiveValue::NotSet;
 
 let banana = fruit::ActiveModel {
-    id: NotSet, // primary key is NotSet
+    id: NotSet, // プライマリーキーは`NotSet`
     name: Set("Banana".to_owned()),
-    ..Default::default() // all other attributes are `NotSet`
+    ..Default::default() // 他のすべての属性は`NotSet`
 };
 
-// Insert, because primary key `id` is `NotSet`
+// プライマリーキーの`id`が`NotSet`であるため挿入
 let banana: fruit::ActiveModel = banana.save(db).await?;
 
 banana.name = Set("Banana Mongo".to_owned());
 
-// Update, because primary key `id` is `Unchanged`
+// プライマリーキーの`id`が`Unchanged`であるため更新
 let banana: fruit::ActiveModel = banana.save(db).await?;
 ```
 
