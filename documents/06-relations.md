@@ -424,15 +424,15 @@ assert_eq!(
 
 ### 自己参照
 
-前のセクションにおいて、[Linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.Linked.html)トレイトを紹介した。
-`Linked`トレイトは自己参照する関連を定義できる。
+前のセクションにおいて、[Linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.Linked.html)トレイトを説明しました。
+`Linked`トレイトは自己参照する関連を定義するときに役に立ちます。
 
-以下の例は自己参照するエンティティを定義する。
+次の例は、自分自身を参照するエンティティを定義しています。
 
 ```rust
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "self_join")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
@@ -451,7 +451,6 @@ pub struct SelfReferencingLink;
 
 impl Linked for SelfReferencingLink {
     type FromEntity = Entity;
-
     type ToEntity = Entity;
 
     fn link(&self) -> Vec<RelationDef> {
