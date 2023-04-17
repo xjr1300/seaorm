@@ -15,6 +15,7 @@
     "struct",
     "subquery",
     "testcase",
-    "Testville"
+    "Testville",
+    "varchar"
   ]
 }

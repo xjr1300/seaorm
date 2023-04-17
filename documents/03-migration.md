@@ -418,3 +418,100 @@ manager.has_table(table_name)
 ```rust
 manager.has_column(table_name, column_name)
 ```
+
+## 複数のスキーマの変更を1つのマイグレーションに結合
+
+`up`と`down`の両方のマイグレーション関数で、複数の変更を結合できます。
+ここに完全な例を示します。
+
+```rust
+async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager
+        .create_table(
+            sea_query::Table::create()
+                .table(Post::Table)
+                .if_not_exists()
+                .col(
+                    ColumnDef::new(Post::Id)
+                        .integer()
+                        .not_null()
+                        .auto_increment()
+                        .primary_key()
+                )
+                .col(ColumnDef::new(Post::Title).string().not_null())
+                .col(ColumnDef::new(Post::Text).string().not_null())
+                .to_owned()
+        )
+        .await?
+    manager
+        .create_index(
+            Index::create()
+                .if_not_exists()
+                .name("idx-post_title")
+                .table(Post::Table)
+                .col(Post::Title)
+                .to_owned(),
+        )
+        .await?;
+
+    Ok(()) // すべて成功!
+}
+```
+
+そして、これが対応する`down`関数です。
+
+```rust
+async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager.drop_index(Index::drop().name("idx-post-title").to_owned())
+    .await?;
+    manager.drop_table(Table::drop().table(Post::Table).to_owned())
+    .await?;
+    Ok(()) // すべて成功!
+}
+```
+
+### Raw SQL
+
+SQL文でマイグレーションファイルを記述できますが、SeaQueryが提供する複数バックエンドの互換性を失います。
+
+```rust
+// migration/src/m20220101_000001_create_table.rs
+use sea_orm::Statement;
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let db = manager.get_connection();
+        // SQL文がバインディングする値を持っていない場合は`execute_unprepared`を使用
+        db.execute_unprepared(
+            "CREATE TABLE `cake` (
+                `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `name` varchar(255) NOT NULL
+            )"
+        )
+        .await?;
+        // SQLがバインディングする値を含んでいる場合は`文`を構築
+        let stmt = Statement::from_sql_and_values(
+            manager.get_database_backend(),
+            r#"INSERT INTO `cake` (`name`) VALUES (?)"#,
+            ["Cheese Cake".into()]
+        );
+        db.execute(stmt).await?;
+
+        Ok(())
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .get_connection()
+            .execute_unprepared("DROP TABLE `cake`")
+            .await?;
+
+        Ok(())
+    }
+}
+```
