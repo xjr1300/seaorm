@@ -4,6 +4,7 @@
     "bigdecimal",
     "bytea",
     "chrono",
+    "citext",
     "cust",
     "HHMMSS",
     "Iden",
