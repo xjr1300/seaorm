@@ -29,6 +29,7 @@
       - [NULL許可属性](#null許可属性)
     - [アクティブモデル](#アクティブモデル)
     - [関連](#関連-1)
+    - [関連している (Related)](#関連している-related)
 
 ## `sea-orm-cli`を使用する
 
@@ -591,3 +592,24 @@ impl RelationTrait for Relation {
 }
 ```
 
+### 関連している (Related)
+
+互いに関連しているエンティティをクエリすることを支援するトレイト制約を定義して、特に多対多関連で役に立ちます。
+
+```rust
+impl Related<super::fruit::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Fruit.def()
+    }
+}
+
+impl Related<super::filling::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::cake_filling::Relation::Filling.def()
+    }
+
+    fn via() -> Option<RelationDef> {
+        Some(super::cake_filling::Relation::Cake.def().rev())
+    }
+}
+```
