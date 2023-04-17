@@ -24,6 +24,7 @@
     - [列](#列-1)
       - [追加の属性](#追加の属性)
       - [選択と保存における列型のキャスト](#選択と保存における列型のキャスト)
+    - [プライマリーキー](#プライマリーキー-1)
 
 ## `sea-orm-cli`を使用する
 
@@ -485,6 +486,49 @@ impl ColumnTrait for Column {
     fn save_as(&self, val: Expr) -> SimpleExpr {
         Column::CaseInsensitiveText => val.cast_as(Alias::new("citext")),
         _ => self.save_enum_as(val),
+    }
+}
+```
+
+### プライマリーキー
+
+テーブルのプライマリーキーを表現する列挙型です。
+
+複合キーは、複数のバリアントを持つ列挙型によって表現されます。
+
+`ValueType`は、[InsertResult](https://docs.rs/sea-orm/*/sea_orm/struct.InsertResult.html)内の`last_inserted_id`の型を定義します。
+
+`auto_increment`はプライマリーキーが自動で生成された値を持っているかを定義します。
+
+```rust
+#[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
+pub enum PrimaryKey {
+    #[sea_orm(column_name = "id")] // デフォルトの列名を上書き
+    Id,  // SQLで"id"にマッピング
+}
+
+impl PrimaryKeyTrait for PrimaryKey {
+    type ValueType = i32;
+
+    fn auto_increment() -> bool {
+        true
+    }
+}
+```
+
+次は複合キーの例です。
+
+```rust
+pub enum PrimaryKey {
+    CakeId,
+    FruitId,
+}
+
+impl PrimaryKeyTrait for PrimaryKey {
+    type ValueType = (i32, i32);
+
+    fn auto_increment() -> bool {
+        false
     }
 }
 ```
