@@ -116,7 +116,7 @@ pub enum Relation {
     Cake,
 }
 
-// `Related` trait has to be implemented by hand
+// `Related`トレイトは手動で実装する必要があります。
 impl Related<super::cake::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Cake.def()
@@ -126,14 +126,14 @@ impl Related<super::cake::Entity> for Entity {
 
 ## 1対多
 
-1対多関連は、1対1関連と似ている。
-前のセクションにおいて、"`Cake`エンティティはせいぜい1つまでの`Fruit`のトッピングを持つ"と例をあげた。
-1対多関連を作成するために、"せいぜい1つ"との制約を削除する。
-`Cake`エンティティに多くの`Fruit`トッピングを持つようにする。
+1対多関連は、1対1関連と似ています。
+前節で"`Cake`エンティティは最大1つの`Fruit`のトッピングを持つ"と例をあげました。
+それを1対多関連にするために、"最大1つ"という制約を削除します。
+よって、多くの`Fruit`エンティティを持つかもしれない`Cake`エンティティを持ちます。
 
 ### 関連の定義
 
-定義方法は1対1関連の定義とほとんど同じであり、違いは`Entity::has_many()`メソッドを使用することである。
+これは、ほとんど1対多関連の定義と同じで、唯一の違いは、ここで`Entity::has_many()`メソッドを使用することです。
 
 ```rust
 // entity/cake.rs
@@ -157,19 +157,27 @@ impl Related<super::fruit::Entity> for Entity {
 }
 ```
 
-あるいは、定義は`DeriveRelation`マクロによって短縮することができ、以下は上記と同義である。
+あるいは、その定義は`DeriveRelation`マクロで短縮することができ、次は、上記の`RelationTrait`に必要な実装を削除します。
 
 ```rust
+// entity/cake.rs
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::fruit::Entity")]
     Fruit,
 }
+
+// `Related`トレイトは手動で実装する必要があります。
+impl Related<super::fruit::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Fruit.def()
+    }
+}
 ```
 
 ### 逆関連の定義
 
-1対多の逆関連の定義は、1対1の逆関連の定義と同じである。
+1対多の逆関連の定義は、1対1の逆関連の定義と同じです。
 
 ```rust
 // entity/fruit.rs
@@ -196,7 +204,7 @@ impl Related<super::cake::Entity> for Entity {
 }
 ```
 
-あるいは、定義は`DeriveRelation`マクロで短縮することができ、次は、上記の`RelationTrait`に必要な実装を削除します。
+あるいは、その定義は`DeriveRelation`マクロで短縮することができ、次は、上記の`RelationTrait`に必要な実装を削除します。
 
 ```rust
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
