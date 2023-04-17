@@ -35,8 +35,10 @@
     - [スキーマファースト、それともエンティティファースト?](#スキーマファーストそれともエンティティファースト)
   - [マイグレーションの実行](#マイグレーションの実行)
     - [コマンドラインインターフェース（CLI）](#コマンドラインインターフェースcli)
-      - [`sea-orm-cli`を介して](#sea-orm-cliを介して)
-      - [SeaSchemaマイグレータCLIを介して](#seaschemaマイグレータcliを介して)
+      - [`sea-orm-cli`によって](#sea-orm-cliによって)
+      - [SeaSchemaマイグレーターCLIによって](#seaschemaマイグレーターcliによって)
+    - [プログラムによるマイグレーション](#プログラムによるマイグレーション)
+    - [任意のPostgreSQLスキーマでマイグレーションを適用](#任意のpostgresqlスキーマでマイグレーションを適用)
 
 ## マイグレーションの設定
 
@@ -83,9 +85,9 @@ migration
 ├── Cargo.toml
 ├── README.md
 └── src
-    ├── lib.rs                              # 統合するためのマイグレータAPI
+    ├── lib.rs                              # 統合するためのマイグレーターAPI
     ├── m20220101_000001_create_table.rs    # マイグレーションファイルのサンプル
-    └── main.rs                             # 手動で実行するためのマイグレータ
+    └── main.rs                             # 手動で実行するためのマイグレーター
 ```
 
 ### ワークスペースの構造
@@ -105,7 +107,7 @@ async-std = { version = "^1", features = ["attributes", "tokio1"] }
 [dependencies.sea-orm-migration]
 version = "^0"
 features = [
-  # CLIを介してマイグレーションを実行するために、少なくとも1つの`ASYNC_RUNTIME`と`DATABASE_DRIVER`フィーチャを有効にしてください。
+  # CLIによってマイグレーションを実行するために、少なくとも1つの`ASYNC_RUNTIME`と`DATABASE_DRIVER`フィーチャを有効にしてください。
   # https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime でサポートされたフィーチャのリストを参照できます。
   # 例えば
   # "runtime-tokio-rustls",  # `ASYNC_RUNTIME`フィーチャ
@@ -592,7 +594,7 @@ Postgresにおいて、マイグレーションはアトミックで実行され
 - `refresh`: 適用されたすべてのマイグレーションをロールバックした後、すべてのマイグレーションを再適用
 - `reset`: 適用されたすべてのマイグレーションをロールバック
 
-#### `sea-orm-cli`を介して
+#### `sea-orm-cli`によって
 
 `sea-rom-cli`は、内部で`cargo run --manifest-path ./migration/Cargo.toml -- COMMAND`を実行します。
 
@@ -606,11 +608,65 @@ sea-orm-cli migrate COMMAND
 sea-orm-cli migrate COMMAND -d ./other/migration/dir
 ```
 
-#### SeaSchemaマイグレータCLIを介して
+#### SeaSchemaマイグレーターCLIによって
 
-`migration/main.rs`に定義されたマイグレータCLIを実行します。
+`migration/main.rs`に定義されたマイグレーターCLIを実行します。
 
 ```bash
 cd migration
 cargo run -- COMMAND
+```
+
+### プログラムによるマイグレーション
+
+[MigratorTrait](https://docs.rs/sea-orm-migration/*/sea_orm_migration/migrator/trait.MigratorTrait.html)を実装する`Migrator`でアプリケーションの開始時にマイグレーションを実行できます。
+
+```rust
+// src/main.rs
+use migration::{Migrator, MigratorTrait};
+
+/// 保留されているすべてのマイグレーションを適用
+Migrator::up(db, None).await?;
+
+/// 保留されている10個のマイグレーションを適用
+Migrator::up(db, Some(10)).await?;
+
+/// 最後に適用されたマイグレーションをロールバック
+Migrator::down(db, None).await?;
+
+/// 適用された最後の10個のマイグレーションをロールバック
+Migrator::down(db, Some(10)).await?;
+
+/// すべてのマイグレーションの状態を確認
+Migrator::status(db).await?;
+
+/// データベースからすべてのテーブルを削除した後、すべてのマイグレーションを再適用
+Migrator::fresh(db).await?;
+
+/// すべてのマイグレーションをロールバックした後、すべてのマイグレーションを再適用
+Migrator::refresh(db).await?;
+
+/// 適用されたすべてのマイグレーションをロールバック
+Migrator::reset(db).await?;
+```
+
+### 任意のPostgreSQLスキーマでマイグレーションを適用
+
+デフォルトでマイグレーションは`public`スキーマで実行されますが、CLIまたはプログラムでマイグレーションを実行するときに、それを上書きできます。
+
+CLIでは、`-s`または`--database_schema`オプションで目的のスキーマを指定できます。
+
+- sea-orm-cliによって: `sea-orm-cli migrate -u postgres://root:root@localhost/database -s my_schema`
+- SeaORMマイグレーターによって: `cargo run -- -u postgres://root:root@localhost/database -s my_schema`
+
+プログラムでも目的のスキーマにマイグレーションを実行できます。
+
+```rust
+let connect_options = ConnectOptions::new("postgres://root:root@localhost/database".into())
+    .set_schema_search_path("my_schema".into()) // デフォルトのスキーマを上書き
+    .to_owned();
+
+let db = Database::connect(connect_options).await?
+
+migration::Migrator::up(&db, None).await?;
 ```
