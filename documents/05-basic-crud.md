@@ -557,11 +557,13 @@ let banana: fruit::ActiveModel = banana.save(db).await?;
 
 ## 削除
 
-### 1行削除
+### 1行削除する
 
-データベースから`Model`を検索して、対応する行をデータベースから削除する。
+データベースから`Model`を検索して、対応する行をデータベースから削除します。
 
 ```rust
+use sea_orm::entity::ModelTrait;
+
 let orange: Option<fruit::Model> = Fruit::find_by_id(30).one(db).await?;
 let orange: fruit::Model = orange.unwrap();
 
@@ -569,9 +571,18 @@ let res: DeleteResult = orange.delete(db).await?;
 assert_eq!(res.rows_affected, 1);
 ```
 
-### 複数行削除
+### プライマリーキーで削除する
 
-`Model`を検索しないで、SeaORMの選択で、データベースから複数の行を削除できる。
+データベースから`Model`を選択してからそれを削除する代わりに、そのプライマリーキーによってデータベースから直接行を削除することもできます。
+
+```rust
+let res: DeleteResult = Fruit::delete_by_id(38).exec(db).await?;
+assert_eq!(res.rows_affected, 1);
+```
+
+### 複数行削除する
+
+SeaORMの選択でそれぞれの`Model`を検索することなしに、データベースから複数の行を削除することもできます。
 
 ```rust
 // DELETE FROM `fruit` WHERE `fruit`.`name` LIKE '%Orange%'
