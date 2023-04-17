@@ -463,40 +463,60 @@ assert_eq!(res.err(), Some(DbErr::RecordNotInserted));
 
 ## 更新
 
-### 1行更新
+### 1行更新する
 
-`find`メソッドの結果から`Model`を得られる。
-`Model`をデータベースに戻して保存する場合、最初に`Model`を`ActiveModel`に変換する必要がある。
-生成されたクエリは`Set`属性のみが含まれる。
+検索した結果から`Model`を取得します。
+もし、`Model`をデータベースに戻して保存する場合、最初に`Model`を`ActiveModel`に変換する必要があります。
+生成されたクエリは`Set`属性のみが含まれます。
 
 ```rust
 let pear: Option<fruit::Model> = Fruit::find_by_id(28).one(db).await?;
 
-// ActiveModelに変換。
+// ActiveModelに変換
 let mut pear: fruit::ActiveModel = pear.unwrap().into();
 
-// name属性を更新。
+// name属性を更新
 pear.name = Set("Sweet pear".to_owned());
 
-// プライマリーキーを使用してデータベースの対応する行を更新。
+// SQL: `UPDATE "fruit" SET "name" = 'Sweet pear' WHERE "id" = 28`
 let pear: fruit::Model = pear.update(db).await?;
 ```
 
-### 複数行の更新
-
-更新したいそれぞれの`Model`を検索しないで、SeaORMの選択によって、データベース内の複数の行を更新できる。
+すべての属性を更新するために、`Unchanged`を`Set`に変換します。
 
 ```rust
-// Bulk set attributes using ActiveModel
+// ActiveModelに入れる
+let mut pear: fruit::ActiveModel = pear.into();
+
+// name属性を更新
+pear.name = Set("Sweet pear".to_owned());
+
+// "dirty"として特定の属性を設定（強制的に更新）
+pear.reset(fruit::Column::CakeId);
+// または、"dirty"としてすべての属性を設定（強制的に更新）
+pear.reset_all();
+
+// SQL: `UPDATE "fruit" SET "name" = 'Sweet pear', "cake_id" = 10 WHERE "id" = 28`
+let pear: fruit::Model = pear.update(db).await?;
+```
+
+### 複数行更新する
+
+更新したいそれぞれの`Model`を検索しないで、SeaORMの選択によって、データベース内の複数の行を更新できます。
+
+SeaORMの選択してそれぞれの`Model`を検索しないで、データベース内の複数行を更新することもできます。
+
+```rust
+// ActiveModelを使用して、属性を一括で設定
 let update_result: UpdateResult = Fruit::update_many()
     .set(pear)
     .filter(fruit::Column::Id.eq(1))
     .exec(db)
     .await?;
 
-// UPDATE `fruit` SET `cake_id` = NULL WHERE `fruit`.`name` LIKE '%Apple%'
+// UPDATE `fruit` SET `cake_id` = 1 WHERE `fruit`.`name` LIKE '%Apple%'
 Fruit::update_many()
-    .col_expr(fruit::Column::CakeId, Expr::value(Value::Null))
+    .col_expr(fruit::Column::CakeId, Expr::value(1))
     .filter(fruit::Column::Name.contains("Apple"))
     .exec(db)
     .await?;
