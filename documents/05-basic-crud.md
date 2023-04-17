@@ -1,5 +1,14 @@
 # CRUDの基本
 
+## スキーマの基本
+
+説明のために[基本的なスキーマ](https://github.com/SeaQL/sea-orm/tree/master/src/tests_cfg)を使用します。
+
+- `cake`は`fruit`と1対多です。
+- `cake`は`filling`と多対多です。
+- `cake_filling`は、`cake`と`filling`の間のジャンクションテーブルです。
+
+![スキーマの基本](https://raw.githubusercontent.com/SeaQL/sea-orm/master/src/tests_cfg/basic_schema.svg)
 ## Select
 
 エンティティを定義すれば、データベースからデータを取り出す準備が整う。
@@ -91,7 +100,7 @@ use sea_orm::{entity::*, query::*, tests_cfg::cake};
 let mut cake_pages = cake::Entity::find()
     .order_by_asc(cake::Column::Id)
     .paginate(db, 50);
- 
+
 while let Some(cakes) = cake_pages.fetch_and_next().await? {
     // Do something on cakes: Vec<cake::Model>
 }
