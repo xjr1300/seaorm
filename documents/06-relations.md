@@ -11,8 +11,8 @@
     - [関連の定義](#関連の定義-2)
     - [逆関連の定義](#逆関連の定義-1)
   - [連鎖した関連](#連鎖した関連)
-    - [遅延ロード](#遅延ロード)
-    - [貪欲なロード(Eager Loading)](#貪欲なロードeager-loading)
+    - [遅延読み込み](#遅延読み込み)
+    - [貪欲な読み込み](#貪欲な読み込み)
     - [自己参照](#自己参照)
   - [Bakery Schema](#bakery-schema)
 
@@ -275,14 +275,15 @@ impl Related<super::cake::Entity> for Entity {
 
 ### 逆関連の定義
 
-`CakeFilling`エンティティの`cake_id`属性は`Cake`エンティティのプライマリーキーを参照しており、`filling_id`属性は`Filling`エンティティのプライマリーキーを参照している。
+`CakeFilling`エンティティの`cake_id`属性は`Cake`エンティティのプライマリーキーを参照しており、その`filling_id`属性は`Filling`エンティティのプライマリーキーを参照しています。
 
-多対多の逆の関連を定義する。
+次の通り、関連を定義します。
 
-1. `Relation`列挙型に2つの新しいバリアントを追加する。
-2. `Entity::belongs_to()`メソッドで2つの関連を定義する。
+1. `Relation`列挙型に、`Cake`と`Filling`の2つの新しいバリアントを追加
+2. `Entity::belongs_to`で両方の関連を定義
 
 ```rust
+// entity/cake_filling.rs
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
     Cake,
@@ -305,7 +306,7 @@ impl RelationTrait for Relation {
 }
 ```
 
-あるいは、定義は`DeriveRelation`マクロで短縮でき、以下は上記と同義である。
+あるいは、その定義は`DeriveRelation`マクロで短縮でき、次は、上記の`RelationTrait`に必要な実装を削除します。
 
 ```rust
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -327,8 +328,13 @@ pub enum Relation {
 
 ## 連鎖した関連
 
-2つのエンティティに複数の結合方法がある場合は、複数のエンティティをつなげた複雑な結合がある場合、それを[Linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.Linked.html)で定義できる。
-これを`Cake`テーブルと`Filling`テーブルを中間の`CakeFilling`テーブルで結合する、簡単な[例](https://github.com/SeaQL/sea-orm/blob/master/src/tests_cfg/cake.rs)で取り上げる。
+`Related`トレイトは、エンティティ関連ダイアグラムで描画した矢（1対1、1対多、多対多）の表現です。
+[Linked](https://docs.rs/sea-orm/*/sea_orm/entity/trait.Linked.html)は、関連の連鎖で構成され、次のときに役に立ちます。
+
+1. エンティティのペアの間に複数の結合パスがある
+2. 関係問い合わせで複数のエンティティを結合する
+
+中間テーブルの`cake_filling`テーブルを介して、ケーキと中身を結合する、簡単な例で[これ](https://github.com/SeaQL/sea-orm/blob/master/src/tests_cfg/cake.rs)を取り上げます。
 
 ```rust
 #[derive(Debug)]
@@ -336,7 +342,6 @@ pub struct CakeToFilling;
 
 impl Linked for CakeToFilling {
     type FromEntity = cake::Entity;
-
     type ToEntity = filling::Entity;
 
     fn link(&self) -> Vec<RelationDef> {
@@ -348,7 +353,7 @@ impl Linked for CakeToFilling {
 }
 ```
 
-あるいは、`RelationDef`はその場で連鎖した関連を定義でき、以下は上記と同義である。
+あるいは、`RelationDef`はその場で定義でき、次は上記と等しいです。
 
 ```rust
 #[derive(Debug)]
@@ -356,7 +361,6 @@ pub struct CakeToFilling;
 
 impl Linked for CakeToFilling {
     type FromEntity = cake::Entity;
-
     type ToEntity = filling::Entity;
 
     fn link(&self) -> Vec<RelationDef> {
@@ -371,9 +375,9 @@ impl Linked for CakeToFilling {
 }
 ```
 
-### 遅延ロード
+### 遅延読み込み
 
-[find_linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/trait.ModelTrait.html#method.find_linked)メソッドで、検索した`Filling`を`Cake`に詰め込むことができる。
+[find_linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/trait.ModelTrait.html#method.find_linked)メソッドで、ケーキに詰め込まれた中身を検索できます。
 
 ```rust
 let cake_model = cake::Model {
@@ -387,19 +391,19 @@ assert_eq!(
         .build(DbBackend::MySql)
         .to_string(),
     [
-        r#"SELECT `filling`.`id`, `filling`.`name`"#,
-        r#"FROM `filling`"#,
-        r#"INNER JOIN `cake_filling` ON `cake_filling`.`filling_id` = `filling`.`id`"#,
-        r#"INNER JOIN `cake` ON `cake`.`id` = `cake_filling`.`cake_id`"#,
-        r#"WHERE `cake`.`id` = 12"#,
+        "SELECT `filling`.`id`, `filling`.`name`, `filling`.`vendor_id`",
+        "FROM `filling`",
+        "INNER JOIN `cake_filling` AS `r0` ON `r0`.`filling_id` = `filling`.`id`",
+        "INNER JOIN `cake` AS `r1` ON `r1`.`id` = `r0`.`cake_id`",
+        "WHERE `r1`.`id` = 12",
     ]
     .join(" ")
 );
 ```
 
-### 貪欲なロード(Eager Loading)
+### 貪欲な読み込み
 
-単独の選択で[find_also_linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/struct.Select.html#method.find_also_linked)メソッドを使用して、すべての`Cake`と`Filling`のペアを検索する。
+[find_also_linked](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/struct.Select.html#method.find_also_linked)メソッドを使用した1つの選択で、すべての`Cake`と`Filling`のペアを検索します。
 
 ```rust
 assert_eq!(
@@ -409,10 +413,10 @@ assert_eq!(
         .to_string(),
     [
         "SELECT `cake`.`id` AS `A_id`, `cake`.`name` AS `A_name`,",
-        "`filling`.`id` AS `B_id`, `filling`.`name` AS `B_name`",
+        "`r1`.`id` AS `B_id`, `r1`.`name` AS `B_name`, `r1`.`vendor_id` AS `B_vendor_id`",
         "FROM `cake`",
-        "LEFT JOIN `cake_filling` ON `cake`.`id` = `cake_filling`.`cake_id`",
-        "LEFT JOIN `filling` ON `cake_filling`.`filling_id` = `filling`.`id`",
+        "LEFT JOIN `cake_filling` AS `r0` ON `cake`.`id` = `r0`.`cake_id`",
+        "LEFT JOIN `filling` AS `r1` ON `r0`.`filling_id` = `r1`.`id`",
     ]
     .join(" ")
 );
