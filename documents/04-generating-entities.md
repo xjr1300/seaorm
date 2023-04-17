@@ -19,6 +19,11 @@
       - [複合キー](#複合キー)
     - [関連](#関連)
     - [アクティブモデルの振る舞い](#アクティブモデルの振る舞い)
+  - [エンティティ構造体の展開](#エンティティ構造体の展開)
+    - [エンティティ](#エンティティ-1)
+    - [列](#列-1)
+      - [追加の属性](#追加の属性)
+      - [選択と保存における列型のキャスト](#選択と保存における列型のキャスト)
 
 ## `sea-orm-cli`を使用する
 
@@ -379,4 +384,107 @@ impl ActiveModelBehavior for ActiveModel {
 
 ```rust
 impl ActiveModelBehavior for ActiveModel {}
+```
+
+## エンティティ構造体の展開
+
+SeaORMは動的で、それはランタイムで何らかを設定する柔軟性があることを意味しています。
+もし、`DeriveEntityModel`が展開する内容に興味があるのであれば、読み続けてください。
+そうでないなら、今のところ、これをスキップできます。
+
+展開されたエンティティの形式は、`--expand-format`を付けた`sea-orm-cli`によって生成されます。
+
+[Cake](https://github.com/SeaQL/sea-orm/blob/master/src/tests_cfg/cake_expanded.rs)エンティティの拡張の節に進みます。
+
+### エンティティ
+
+[EntityTrait]を実装することで、与えたテーブルのCRUD操作を実行できます。
+
+```rust
+#[derive(Copy, Clone, Default, Debug, DeriveEntity)]
+pub struct Entity;
+
+impl EntityName for Entity {
+    fn schema_name(&self) -> Option<&str> {
+        None
+    }
+
+    fn table_name(&self) -> &str {
+        "cake"
+    }
+}
+```
+
+### 列
+
+このテーブルのすべての列を表現する列挙型です。
+
+```rust
+#[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
+pub enum Column {
+    Id,
+    Name,
+}
+
+impl ColumnTrait for Column {
+    type EntityName = Entity;
+
+    fn def(&self) -> ColumnDef {
+        match self {
+            Self::Id => ColumnType::Integer.def(),
+            Self::Name => ColumnType::String(None).def(),
+        }
+    }
+}
+```
+
+すべての列名は、スネークケースで想定されます。
+`column_name`属性を指定することで、列の名前を上書きできます。
+
+```rust
+pub enum Column {
+    Id,      // SQLで"id"にマッピング
+    Name,    // SQLで"name"にマッピング
+    #[sea_orm(column_name = "create_at")]
+    CreateAt // SQLで"create_at"にマッピング
+}
+```
+
+それぞれの列にデータ型を指定するために、[ColumnTyp](https://docs.rs/sea-orm/*/sea_orm/entity/enum.ColumnType.html)列挙型を使用されます。
+
+#### 追加の属性
+
+- デフォルト値
+- ユニーク
+- インデックス
+- NULL許容
+
+```rust
+ColumnType::String(None).def().default_value("Sam").unique().indexed().nullable()
+```
+
+#### 選択と保存における列型のキャスト
+
+もし、ある型で列を選択するが、別の方でデータベースに保存する必要がある場合、キャストを実行するために`select_as`と`save_as`属性を記述できます。
+典型的なユースケースは、`citext`（テキストの大文字小文字を無視）型の列をRustの`String`で選択して、`citext`としてデータベースに保存することです。
+`ColumnTrait`のメソッドを次のように上書きする必要があります。
+
+```rust
+use sea_orm::sea_query::{Expr, SimpleExpr, Alias}
+
+impl ColumnTrait for Column {
+    // Snipped...
+
+    /// Cast column expression used in select statement.
+    fn select_as(&self, expr: Expr) -> SimpleExpr {
+        Column::CaseInsensitiveText => expr.cast_as(Alias::new("text")),
+        _ => self.select_enum_as(expr),
+    }
+
+    /// Cast value of a column into the correct type for database storage.
+    fn save_as(&self, val: Expr) -> SimpleExpr {
+        Column::CaseInsensitiveText => val.cast_as(Alias::new("citext")),
+        _ => self.save_enum_as(val),
+    }
+}
 ```

@@ -21,5 +21,8 @@
     "Testville",
     "tinyint",
     "varchar"
-  ]
+  ],
+  "markdownlint.config": {
+    "MD024": false
+  }
 }
