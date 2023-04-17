@@ -596,12 +596,12 @@ assert_eq!(res.rows_affected, 2);
 
 ## JSON
 
-### JSONでシリアライズした結果を選択
+### JSONの結果を選択
 
-すべてのSeaORMの選択は`serde_json::Value`を返却することができる。
+すべてのSeaORMの選択は、`serde_Json::Value`を返却する能力があります。
 
 ```rust
-// Find by id
+// idで検索
 let cake: Option<serde_json::Value> = Cake::find_by_id(1)
     .into_json()
     .one(db)
@@ -615,7 +615,7 @@ assert_eq!(
     }))
 );
 
-// Find with filter
+// フィルタを使用した検索
 let cakes: Vec<serde_json::Value> = Cake::find()
     .filter(cake::Column::Name.contains("chocolate"))
     .order_by_asc(cake::Column::Name)
@@ -625,7 +625,7 @@ let cakes: Vec<serde_json::Value> = Cake::find()
 
 assert_eq!(
     cakes,
-    vec![
+    [
         serde_json::json!({
             "id": 2,
             "name": "Chocolate Forest"
@@ -637,19 +637,18 @@ assert_eq!(
     ]
 );
 
-// Paginate json result
+// JSON結果のページネート
 let cake_pages: Paginator<_> = Cake::find()
     .filter(cake::Column::Name.contains("chocolate"))
     .order_by_asc(cake::Column::Name)
     .into_json()
     .paginate(db, 50);
-
 while let Some(cakes) = cake_pages.fetch_and_next().await? {
-    // Do something on cakes: Vec<serde_json::Value>
+    // Vec<serde_json::Value>型のcakesで何かする。
 }
 ```
 
-## SQL実行
+## ネイティブなSQL (Raw SQL)
 
 ### SQLでクエリする
 
