@@ -9,80 +9,85 @@
 - `cake_filling`は、`cake`と`filling`の間のジャンクションテーブルです。
 
 ![スキーマの基本](https://raw.githubusercontent.com/SeaQL/sea-orm/master/src/tests_cfg/basic_schema.svg)
-## Select
 
-エンティティを定義すれば、データベースからデータを取り出す準備が整う。
-データベース内のデータを示すそれぞれの行は`Model`に対応する。
+## 選択 (SELECT)
 
-デフォルトでは、SeaORMは`Column`列挙体で定義されたすべての列を選択する。
+エンティティを定義したら、データベースからデータを取り出す準備が整います。
+データベース内のデータのそれぞれの行は、`Model`に対応します。
 
-### プライマリーキーで検索
+デフォルトで、SeaORMは`Column`列挙体に定義されたすべての列を選択します。
 
-モデルのプライマリーキーでモデルを検索する。
-プライマリキーは、単独のキーまたは複合キーである。
-自動的に選択クエリと条件を構築する[Entity](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.EntityTrait.html)の[find_by_id](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.EntityTrait.html#method.find_by_id)の呼び出しから開始する。
-そして、`one`メソッドでデータベースから単独のモデルを取得する。
+### プライマリーキーによる検索
+
+モデルの1つのまたは複合キーで、モデルを検索できます。
+選択クエリと条件を自動で構築する[Entity](https://docs.rs/sea-orm/*/sea_orm/entity/trait.EntityTrait.html)の[find_by_id](https://docs.rs/sea-orm/*/sea_orm/entity/trait.EntityTrait.html#method.find_by_id)を呼び出すことから始めます。
+そして、`one`メソッドでデータベースから1つのモデルを取得します。
 
 ```rust
 use super::cake::Entity as Cake;
 use super::cake_filling::Entity as CakeFilling;
 
-// Find by primary key
+// プライマリーキーで検索
 let cheese: Option<cake::Model> = Cake::find_by_id(1).one(db).await?;
-
-// Find by composite primary keys
+// 複合プライマリーキーで検索
 let vanilla: Option<cake_filling::Model> = CakeFilling::find_by_id((6, 8)).one(db).await?;
 ```
 
-### 条件で検索して並び替える
+### 条件と順番を伴って検索
 
-プライマリーキーでモデルを検索することに加えて、記述した条件に適合する1つまたは複数のモデルを特定の条件で取得できる。
-[find](https://docs.rs/sea-orm/0.5/sea_orm/entity/trait.EntityTrait.html#method.find)メソッドは、SeaORMのクエリビルダーにアクセスする機能を提供する。
-`find`メソッドは、`where`や`order by`のようなすべての選択式の構築をサポートする。
-`where`や`order by`は、それぞれ[filter](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/trait.QueryFilter.html#method.filter)と[order_by_*](https://docs.rs/sea-orm/0.5/sea_orm/query/trait.QueryOrder.html#method.order_by)メソッドを使用することで構築される。
+プライマリーキーでモデルを取得することに加えて、特定の順番で、特定の条件にマッチした1つまたは複数のモデルも取得できます。
+[find](https://docs.rs/sea-orm/*/sea_orm/entity/trait.EntityTrait.html#method.find)メソッドは、SeaORMのクエリビルダーにアクセスできるようにします。
+それは`where`と`order by`のようなすべての一般的な選択表現の構築を支援します。
+それらは、それぞれ[filter](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/trait.QueryFilter.html#method.filter)と[order_by_*](https://docs.rs/sea-orm/*/sea_orm/query/trait.QueryOrder.html#method.order_by)メソッドを使用することで構築できます。
 
-:::note info
-条件式の詳細は[conditional expression](https://www.sea-ql.org/SeaORM/docs/advanced-query/conditional-expression)を読むこと。
-:::
-
-### 関連するモデルの検索
-
-:::note info
-テーブルの結合の詳細は[table joins](https://www.sea-ql.org/SeaORM/docs/advanced-query/custom-joins)を読むこと。
-:::
-
-#### 遅延ロード
-
-[find_related](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/trait.ModelTrait.html#method.find_related)メソッドを使用する。
-
-関連するモデルは、それらが求められたときに必要に応じてロードされるため、何らかのアプリケーションロジックに基づいて関連するモデルをロードする場合に適している。
-遅延ロードは`Eager Loading`(貪欲なロード:一括でデータを取り出す)と比較して、データベースとのやりとりがが増加することに注意すること。
+> 詳細は[条件式](https://www.sea-ql.org/SeaORM/docs/advanced-query/conditional-expression/)を参照してください。
 
 ```rust
-// Find a cake model first
+let chocolate: Vec<cake::Model> = Cake::find()
+    .filter(cake::Column::Name.contains("chocolate"))
+    .order_by_asc(cake::Column::Name)
+    .all(db)
+    .await?;
+```
+
+### 関連したモデルの検索
+
+> 詳細は[リレーション](https://www.sea-ql.org/SeaORM/docs/relation/one-to-one/)の章を参照してください。
+
+#### 遅延読み込み
+
+[find_related](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/trait.ModelTrait.html#method.find_related)メソッドを使用します。
+
+関連したモデルは、それらを求めたときに必要に応じてロードされるため、何らかのアプリケーションロジックに基づいて関連したモデルを読み込む場合に適しています。
+遅延読み込みは、[貪欲な読み込み（Eager Loading）](#貪欲な読み込みeager-loading)と比較して、データベースとのやりとりがが増加することに注意してください。
+
+```rust
+// ケーキモデルを最初に検索
 let cheese: Option<cake::Model> = Cake::find_by_id(1).one(db).await?;
 let cheese: cake::Model = cheese.unwrap();
 
-// Then, find all related fruits of this cake
+// そして、このケーキの関連したすべてのフルーツを検索
 let fruits: Vec<fruit::Model> = cheese.find_related(Fruit).all(db).await?;
 ```
 
-#### 貪欲なロード(Eager Loading)
+#### 貪欲な読み込み(Eager Loading)
 
-すべての関連するモデルが1度にロードされる。
-これは、遅延ロードと比較してデータベースとのやりとりのオーバーヘッドを最小化する。
+すべての関連するモデルが1度で読み込まれます。
+これは、遅延読み込みと比較してデータベースとのやりとりを最小化します。
 
 ##### 1対1
 
-[find_also_related](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/struct.Select.html#method.find_also_related)メソッドを使用する。
+[find_also_related](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/struct.Select.html#method.find_also_related)メソッドを使用します。
 
 ```rust
-let cake_and_fruit: Vec<(cake::Model, Option<fruit::Model>)> = Cake::find().find_also_related(Fruit).all(db).await?;
+let fruits_and_cakes: Vec<(fruit::Model, Option<cake::Model>)> = Fruit::find().find_also_related(Cake).all(db).await?;
 ```
 
-##### 1対多
+##### 1対多／多対多
 
-[find_with_related](https://docs.rs/sea-orm/0.5/sea_orm/entity/prelude/struct.Select.html#method.find_with_related)メソッドを使用すると、関連するモデルは親モデルによってグループ化される。
+[find_with_related](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/struct.Select.html#method.find_with_related)メソッドを使用すると、関連したモデルが親モデルによってグループ化されます。
+これを獲得するために、クエリはケーキのプライマリーキーで並び替えられます。
+このメソッドは、1対NとM対Nのケース両方を処理して、ジャンクションテーブルががあったとき、関係した2つを結合を実行します。
 
 ```rust
 let cake_with_fruits: Vec<(cake::Model, Vec<fruit::Model>)> = Cake::find()
@@ -91,9 +96,43 @@ let cake_with_fruits: Vec<(cake::Model, Vec<fruit::Model>)> = Cake::find()
     .await?;
 ```
 
-### 結果のページ付け
+#### バッチ読み込み
 
-カスタムなページサイズでSeaORMの選択結果を[paginator](https://docs.rs/sea-orm/0.5/sea_orm/struct.Paginator.html)に変換する。
+（バージョン）0.11まで、バッチで関連したエンティティを読み込むために[LoaderTrait](https://docs.rs/sea-orm/*/sea_orm/query/trait.LoaderTrait.html)を導入しました。
+
+貪欲な読み込みと比較して、1つ（多対多のケースにおいて、または2つ）以上のデータベースとのやり取りで、帯域幅（1対多のケースを考えると、ある側の行が重複しているかもしれません）を節約します。
+
+##### 1対1
+
+[load_one](https://docs.rs/sea-orm/*/sea_orm/query/trait.LoaderTrait.html#tymethod.load_one)メソッドを使用します。
+
+```rust
+let fruits: Vec<fruit::Model> = Fruit::find().all(db).await?;
+let cakes: Vec<Option<cake::Model>> = fruits.load_one(Cake, db).await?;
+```
+
+##### 1対多
+
+[load_many](https://docs.rs/sea-orm/*/sea_orm/query/trait.LoaderTrait.html#tymethod.load_many)メソッドを使用します。
+
+```rust
+let cakes: Vec<cake::Model> = Cake::find().all(db).await?;
+let fruits: Vec<Vec<fruit::Model>> = cakes.load_many(Fruit, db).await?;
+```
+
+##### 多対多
+
+[load_many_to_many](https://docs.rs/sea-orm/*/sea_orm/query/trait.LoaderTrait.html#tymethod.load_many_to_many)メソッドを使用します。
+ジャンクションエンティティを提供する必要があります。
+
+```rust
+let cakes: Vec<cake::Model> = Cake::find().all(db).await?;
+let fillings: Vec<Vec<filling::Model>> = cakes.load_many_to_many(Filling, CakeFilling, db).await?;
+```
+
+### 結果のページネート
+
+カスタムなページサイズで任意のSeaORMの選択を[paginator](https://docs.rs/sea-orm/*/sea_orm/struct.Paginator.html)に変換します。
 
 ```rust
 use sea_orm::{entity::*, query::*, tests_cfg::cake};
@@ -102,13 +141,49 @@ let mut cake_pages = cake::Entity::find()
     .paginate(db, 50);
 
 while let Some(cakes) = cake_pages.fetch_and_next().await? {
-    // Do something on cakes: Vec<cake::Model>
+    // Vec<cake::Model>型のcakesで何かする
 }
+```
+
+### カーソルページネーション
+
+プライマリーキーのような列（複数列）に基づいて行をページネートするために、カーソルページネーションを使用します。
+
+```rust
+use sea_orm::{entity::*, query::*, tests_cfg::cake};
+// `cake`.`id`で並び替えられたカーソルを作成
+let mut cursor = cake::Entity::find().cursor_by(cake::Column::Id);
+
+// `cake`.`id` > 1 AND `cake`.`id` < 100でページネートした結果をフィルタ
+cursor.after(1).before(100);
+
+// （`cake`.`id`を昇順で並び替えした）最初の10行を取得
+for cake in cursor.first(10).all(db).await? {
+    // cake::Model型のcakeで何かする
+}
+
+// （`cake`.`id`の降順で並び替えるが、行は昇順で返却されている）最後の10行を取得
+for cake in cursor.last(10).all(db).await? {
+    // cake::Model型のcakeで何かする
+}
+```
+
+複合プライマリーキーに基づいて行をページねーとすることもできます。
+
+```rust
+use sea_orm::{entity::*, query::*, tests_cfg::cake_filling};
+let rows = cake_filling::Entity::find()
+    .cursor_by((cake_filling::Column::CakeId, cake_filling::Column::FillingId))
+    .after((0, 1))
+    .before((10, 11))
+    .first(3)
+    .all(&db)
+    .await?,
 ```
 
 ### カスタムな選択
 
-カスタム列や条件で選択したい場合は、[custom select](https://www.sea-ql.org/SeaORM/docs/advanced-query/custom-select)を読むこと。
+カスタム列や条件で選択したい場合は、[カスタムな選択](https://www.sea-ql.org/SeaORM/docs/advanced-query/custom-select/)を参照してください。
 
 ## 挿入
 
