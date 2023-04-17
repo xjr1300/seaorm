@@ -55,16 +55,16 @@ DATABASE_URL=sql://username:password@localhost/database
 
 ### ヘルプの入手
 
-ヘルプを表示するために、CLIコマンド/サブコマンドに`-h`フラグを使用する。
+ヘルプを表示するために、任意のCLIコマンドまたはサブコマンドに対して、`-h`フラグを使用します。
 
 ```bash
-# すべてのコマンドをリストする。
+# 利用可能なすべてのコマンドを表示
 sea-orm-cli -h
 
-# `generate`コマンドのすべてのサブコマンドをリストする。
+# `generate`コマンドのすべてのサブコマンドを表示
 sea-orm-cli generate -h
 
-# `generate entity`サブコマンドの使用方法を表示する。
+# `generate entity`サブコマンドを使用する方法を表示
 sea-orm-cli generate entity -h
 ```
 
