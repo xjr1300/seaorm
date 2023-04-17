@@ -14,6 +14,8 @@
       - [追加のプロパティ](#追加のプロパティ)
       - [属性の無視](#属性の無視)
       - [選択と保存で列の型をキャストする](#選択と保存で列の型をキャストする)
+    - [プライマリーキー](#プライマリーキー)
+      - [自動インクリメント](#自動インクリメント)
 
 ## `sea-orm-cli`を使用する
 
@@ -253,4 +255,23 @@ pub ignore_me: String
 ```rust
 #[sea_orm(select_as = "text", save_as = "citext")]
 pub case_insensitive_text: String
+```
+
+### プライマリーキー
+
+プライマリーキーとして列をマークするために`primary_key`属性を使用します。
+
+```rust
+#[sea_orm(primary_key)]
+pub id: i32
+```
+
+#### 自動インクリメント
+
+デフォルトで`auto_increment`は`primary_key`列に暗黙的にマークされます。
+`false`でそれを上書きします。
+
+```rust
+#[sea_orm(primary_key, auto_increment = false)]
+pub id: i32
 ```
