@@ -7,9 +7,9 @@
   - [1対多](#1対多)
     - [関連の定義](#関連の定義-1)
     - [逆関連の定義](#逆関連の定義)
-  - [多対多の関連](#多対多の関連)
-    - [多対多の関連の定義](#多対多の関連の定義)
-    - [多対多の逆関連の定義](#多対多の逆関連の定義)
+  - [多対多](#多対多)
+    - [関連の定義](#関連の定義-2)
+    - [逆関連の定義](#逆関連の定義-1)
   - [連鎖した関連](#連鎖した関連)
     - [遅延ロード](#遅延ロード)
     - [貪欲なロード(Eager Loading)](#貪欲なロードeager-loading)
@@ -225,36 +225,40 @@ impl Related<super::cake::Entity> for Entity {
 }
 ```
 
-## 多対多の関連
+## 多対多
 
-多対多の関連は3つのテーブルで形成され、2つのテーブルはジャンクションテーブルによって関連を持つ。
-例として、`Cake`は多くの`Filling`を持ち、`Filling`は中間のエンティティである`CakeFilling`によって、多くの`Cake`に共有されるとする。
+多対多関連は3つのテーブルで形成され、2つのテーブルはジャンクションテーブルを介して関連されています。
+例として、`Cake`は多くの`Filling`を持ち、`Filling`は中間のエンティティである`CakeFilling`を介して、多くの`Cake`に共有されます。
 
-### 多対多の関連の定義
+### 関連の定義
 
-`Cake`エンティティに`Related<filling::Entity>`トレイトを実装する。
-まず`cake_filling::Relation::Cake`関連の逆によって、`Cake`エンティティと中間テーブルとなる`CakeFilling`に結合する。
-そして`cake_filling::Relation::Filling`関連を使用して、`CakeFilling`と`Filling`エンティティを結合する。
+`Cake`エンティティに`Related<filling::Entity>`トレイトを実装します。
+
+SearORMにおける`Relation`は矢です。
+その矢は`from`と`to`を持ちます。
+`cake_filling::Relation::Cake`は、`CakeFilling -> Cake`を定義します。
+[rev](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/struct.RelationDef.html#method.rev)の呼び出しは、それを`Cake -> CakeFilling`に反転します。
+
+`CakeFilling -> Filling`を定義する`cake_filling::Relation::Filling`でこれを連鎖させることは、`Cake -> CakeFilling -> Filling`になります。
 
 ```rust
 // entity/cake.rs
 impl Related<super::filling::Entity> for Entity {
-    // 最終的な関連は、`Cake -> CakeFilling -> Filling`である。
+    // 最終的な関連は、`Cake -> CakeFilling -> Filling`です。
     fn to() -> RelationDef {
         super::cake_filling::Relation::Filling.def()
     }
 
     fn via() -> Option<RelationDef> {
-        // オリジナルの関連は、`CakeFilling -> Cake`であり、
-        // 後の`rev`によって、その関連は、`Cake -> CakeFilling`になる。
+        // オリジナルの関連は、`CakeFilling -> Cake`で、
+        // 後の`rev`によって、その関連は`Cake -> CakeFilling`になる。
         Some(super::cake_filling::Relation::Cake.def().rev())
     }
 }
 ```
 
-同様に、`Filling`エンティティで、`Related<cake::Entity>`トレイトを実装する。
-まず、`cake_filling::Relation::Filling`関連の逆によって、`Filling`エンティティとジャンクションテーブルの`CakeFilling`を結合する。
-そして`cake_filling::Relation::Cake`関連で`CakeFilling`と`Cake`を結合する。
+同様に、`Filling`エンティティで、`Related<cake::Entity>`トレイトを実装します。
+まず、`cake_filling::Relation::Filling`逆関連を`介して`中間テーブルと結合して、`cake_filling::Relation::Cake`関連で`Cake`エンティティ`に`結合します。
 
 ```rust
 // entity/filling.rs
@@ -269,7 +273,7 @@ impl Related<super::cake::Entity> for Entity {
 }
 ```
 
-### 多対多の逆関連の定義
+### 逆関連の定義
 
 `CakeFilling`エンティティの`cake_id`属性は`Cake`エンティティのプライマリーキーを参照しており、`filling_id`属性は`Filling`エンティティのプライマリーキーを参照している。
 
