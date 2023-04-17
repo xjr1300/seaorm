@@ -1,13 +1,13 @@
 # 関連
 
-## 1対1の関連
+## 1対1
 
-1対1の関連は、最も基本的なデータベースの関連である。
-`Cake`エンティティはせいぜい1つの`Fruit`トッピングを持つ。
+1対1の関連は、最も基本的なデータベースの関連です。
+`Cake`エンティティは最大1つの`Fruit`トッピングを持つとします。
 
-### 1対1の関連の定義
+### 関連の定義
 
-`Cake`エンティティに関連を定義する。
+`Cake`エンティティで、関連を定義します。
 
 1. `Relation`列挙体に新しい`Fruit`バリアントを追加
 2. `Fruit`バリアントに`Entity::has_one()`を定義
@@ -35,7 +35,7 @@ impl Related<super::fruit::Entity> for Entity {
 }
 ```
 
-あるいは、定義は`DeriveRelation`マクロで短縮でき、以下は上記と同義である。
+あるいは、その定義は`DeriveRelation`マクロで短縮でき、次は上記の`RelationTrait`に必要な実装を削除します。
 
 ```rust
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -43,17 +43,24 @@ pub enum Relation {
     #[sea_orm(has_one = "super::fruit::Entity")]
     Fruit,
 }
+
+// `Related`トレイトは手動で実装する必要があります
+impl Related<super::fruit::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Fruit.def()
+    }
+}
 ```
 
-### 1対1の逆の関連の定義
+### 逆の関連の定義
 
-`Fruit`エンティティにおいて、`cake_id`属性は、`Cake`エンティティのプライマリキーを参照している。
+`Fruit`エンティティで、その`cake_id`属性は、`Cake`エンティティのプライマリキーを参照しています。
 
-以下の通り逆の関連を定義する。
+次の通り逆の関連を定義します。
 
-1. 新しい列挙型のバリアント`Relation::Cake`を`Fruit`エンティティに追加する。
-2. `Relation`列挙型に`Entity::belongs_to()`メソッドを定義する。逆の関連は、常に`Entity::belongs_to()`メソッドで定義する。
-3. `Related<cake::Entity>`トレイトを実装する。
+1. `Fruit`エンティティに、新しい列挙型のバリアント`Relation::Cake`を追加
+2. `Entity::belongs_to`メソッドでその定義を記述して、このメソッドを使用して逆関連を定義
+3. `Related<cake::Entity>`トレイトを実装
 
 ```rust
 // entity/fruit.rs
@@ -80,7 +87,7 @@ impl Related<super::cake::Entity> for Entity {
 }
 ```
 
-あるいは、定義は`DeriveRelation`マクロによって短縮でき、以下は上記と同義である。
+あるいは、その定義は`DeriveRelation`マクロによって短縮でき、次は`RelationTrait`に必要な実装を削除します。
 
 ```rust
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -91,6 +98,13 @@ pub enum Relation {
         to = "super::cake::Column::Id"
     )]
     Cake,
+}
+
+// `Related` trait has to be implemented by hand
+impl Related<super::cake::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Cake.def()
+    }
 }
 ```
 
