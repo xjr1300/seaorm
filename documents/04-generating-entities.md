@@ -104,12 +104,12 @@ sea-orm-cli generate entity -u protocol://username:password@localhost/bakery -o 
 
 ## エンティティ構造体
 
-単純な[Cake](https://github.com/SeaQL/sea-orm/blob/master/src/tests_cfg/cake.rs)エンティティを見なさい。
+単純な[Cake](https://github.com/SeaQL/sea-orm/blob/master/src/tests_cfg/cake.rs)エンティティを確認します。
 
 ```rust
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "cake")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -123,17 +123,28 @@ pub enum Relation {
     Fruit,
 }
 
+impl Related<super::fruit::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Fruit.def()
+    }
+}
+
 impl ActiveModelBehavior for ActiveModel {}
 ```
 
+> ℹ️ INFO
+>
+> もし、任意の関連や追加の振る舞いが必要なくても、`Relation`列挙型と`ActiveModelBehavior`のimplブロックを削除しないでください。
+> エンティティが十分に機能させるためにそれらのボディを空に保ってください。
+
 ### エンティティ
 
-`DeriveEntityModel`マクロは、`Model`、`Column`と`PrimaryKey`を関連付けて`Entity`を定義する面倒な作業をすべて実施する。
+`DeriveEntityModel`マクロは、`Model`、`Column`と`PrimaryKey`を関連付けて`Entity`として定義する面倒な作業をすべて実施します。
 
 #### テーブル名
 
-`table_name`属性は、データベース内の対応するテーブルを指定する。
-オプションで、データベーススキーマまたはデータベース名を`schema_name`で指定できる。
+`table_name`属性は、データベース内で対応するテーブルを指定します。
+また、オプションで`schema_name`によってデータベーススキーマまたはデータベース名も指定できます。
 
 ```rust
 #[sea_orm(table_name = "cake", schema_name = "public")]
