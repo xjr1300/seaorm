@@ -30,6 +30,14 @@
     - [アクティブモデル](#アクティブモデル)
     - [関連](#関連-1)
     - [関連している (Related)](#関連している-related)
+  - [列挙型](#列挙型)
+    - [文字列](#文字列)
+    - [整数](#整数)
+    - [データベースのネイティブな列挙型](#データベースのネイティブな列挙型)
+    - [実装](#実装)
+      - [導出実装](#導出実装)
+      - [手動実装](#手動実装)
+    - [モデルでアクティブモデルを使用する](#モデルでアクティブモデルを使用する)
 
 ## `sea-orm-cli`を使用する
 
@@ -612,4 +620,164 @@ impl Related<super::filling::Entity> for Entity {
         Some(super::cake_filling::Relation::Cake.def().rev())
     }
 }
+```
+
+## 列挙型
+
+値がデータベースの文字列、整数またはネイティブな列挙型にマッピングされるところで、モデル内でRustの列挙外を使用できます。
+
+### 文字列
+
+```rust
+#[derive(EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "String(Some(1))")]
+pub enum Category {
+    #[sea_orm(string_value = "B")]
+    Big,
+    #[sea_orm(string_value = "S")]
+    Small,
+}
+```
+
+### 整数
+
+```rust
+#[derive(EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "i32", db_type = "Integer")]
+pub enum Color {
+    #[sea_orm(num_value = 0)]
+    Black,
+    #[sea_orm(num_value = 1)]
+    White,
+}
+```
+
+代わりに、次のように記述できます。
+
+```rust
+#[derive(EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "i32", db_type = "Integer")]
+pub enum Color {
+    Black = 0,
+    White = 1,
+}
+```
+
+### データベースのネイティブな列挙型
+
+```rust
+#[derive(EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "tea")]
+pub enum Tea {
+    #[sea_orm(string_value = "EverydayTea")]
+    EverydayTea,
+    #[sea_orm(string_value = "BreakfastTea")]
+    BreakfastTea,
+}
+```
+
+### 実装
+
+手動または[DeriveActiveEnum](https://docs.rs/sea-orm/*/sea_orm/derive.DeriveActiveEnum.html)導出マクロを使用して、[ActiveEnum](https://docs.rs/sea-orm/*/sea_orm/entity/trait.ActiveEnum.html)を実装できます。`
+
+#### 導出実装
+
+マクロ属性の完全者使用は[DeriveActiveEnu](https://docs.rs/sea-orm/*/sea_orm/derive.DeriveActiveEnum.html)を参照してください。
+
+```rust
+use sea_orm::entity::prelude::*;
+
+// 導出マクロを使用
+#[derive(Debug, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "String(Some(1))",
+    enum_name = "category"
+)]
+pub enum Category {
+    #[sea_orm(string_value = "B")]
+    Big,
+    #[sea_orm(string_value = "S")]
+    Small,
+}
+```
+
+#### 手動実装
+
+```rust
+use sea_orm::entity::prelude::*;
+
+// Implementing it manually
+#[derive(Debug, PartialEq, Eq, EnumIter)]
+pub enum Category {
+    Big,
+    Small,
+}
+
+impl ActiveEnum for Category {
+    // The macro attribute `rs_type` is being pasted here
+    type Value = String;
+
+    // By default, the name of Rust enum in camel case if `enum_name` was not provided explicitly
+    fn name() -> String {
+        "category".to_owned()
+    }
+
+    // Map Rust enum variants to corresponding `num_value` or `string_value`
+    fn to_value(&self) -> Self::Value {
+        match self {
+            Self::Big => "B",
+            Self::Small => "S",
+        }
+        .to_owned()
+    }
+
+    // Map `num_value` or `string_value` to corresponding Rust enum variants
+    fn try_from_value(v: &Self::Value) -> Result<Self, DbErr> {
+        match v.as_ref() {
+            "B" => Ok(Self::Big),
+            "S" => Ok(Self::Small),
+            _ => Err(DbErr::Type(format!(
+                "unexpected value for Category enum: {}",
+                v
+            ))),
+        }
+    }
+
+    // The macro attribute `db_type` is being pasted here
+    fn db_type() -> ColumnDef {
+        ColumnType::String(Some(1)).def()
+    }
+}
+```
+
+### モデルでアクティブモデルを使用する
+
+```rust
+use sea_orm::entity::prelude::*;
+
+// Define the `Category` active enum
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "String(Some(1))")]
+pub enum Category {
+    #[sea_orm(string_value = "B")]
+    Big,
+    #[sea_orm(string_value = "S")]
+    Small,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[sea_orm(table_name = "active_enum")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: i32,
+    // `Category`アクティブ列挙型を使用してデータベースの列を表現
+    pub category: Category,
+    pub category_opt: Option<Category>,
+}
+
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
+
+impl ActiveModelBehavior for ActiveModel {}
 ```
