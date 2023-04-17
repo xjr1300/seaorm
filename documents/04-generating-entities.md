@@ -70,36 +70,36 @@ sea-orm-cli generate entity -h
 
 ### エンティティファイルの生成
 
-データベース内のすべてのテーブルを探して、それぞれ対応する`SeaORM`エンティティファイルを生成する。
+データベース内のすべてのテーブルを発見して、それぞれのテーブルに対応する`SeaORM`のエンティティファイルを生成します。
 
-サポートしているデータベースを以下に示す。
+サポートしているデータベースは次です。
 
-* `MySQL`
-* `PostgreSQL`
-* `SQLite`
+- `MySQL`
+- `PostgreSQL`
+- `SQLite`
 
-コマンドラインオプションを以下に示す。
+コマンドラインオプションは次です。
 
-* `-u / --database-url`: データベースURL(デフォルトは環境変数に設定された`DATABASE_URL`)
-* `-s / --database-schema`: データベーススキーマ(デフォルトは環境変数に設定された`DATABASE_SCHEMA`)
-  * `MySQL`と`SQLite`の場合、この引数は無視される。
-  * `PostgreSQL`の場合、この引数はデフォルト値`public`を持つオプションである。
-* `-o / --output-dir`: エンティティファイルを出力するディレクトリ(デフォルトはカレントディレクトリ)
-* `-v / --verbose`: デバッグメッセージを表示
-* `--include-hidden-tables`: 隠しテーブルからエンティティファイルを生成(アンダースコアで名前が始まるテーブルは隠されていて、デフォルトでは無視する)
-* `--compact-format`: [コンパクトフォーマット](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure)でエンティティファイルを生成(デフォルトは有効)
-* `--expand-format`: [展開されたフォーマット](https://www.sea-ql.org/SeaORM/docs/generate-entity/expanded-entity-structure)でエンティティファイルを生成
-* `--with-serde`: 自動的にエンティティを`serde`の`Serialize`/`Deserialize`トレイトから導出(デフォルトは`none`)
-  * `none`
-  * `serialize`
-  * `deserialize`
-  * `both`
+- `-u / --database-url`: データベースURL（デフォルトは環境変数に設定された`DATABASE_URL`）
+- `-s / --database-schema`: データベーススキーマ（デフォルトは環境変数に設定された`DATABASE_SCHEMA`）
+  - `MySQL`と`SQLite`の場合、この引数は無視されます。
+  - `PostgreSQL`の場合、この引数はデフォルト値`public`を持つオプションです。
+- `-o / --output-dir`: エンティティファイルを出力するディレクトリ（デフォルトはカレントディレクトリ）
+- `-v / --verbose`: デバッグメッセージを表示
+- `--include-hidden-tables`: 隠しテーブルからエンティティファイルを生成（アンダースコアで名前が始まるテーブルは隠しテーブルで、デフォルトでは無視します）
+- `--compact-format`: [コンパクトフォーマット](https://www.sea-ql.org/SeaORM/docs/generate-entity/entity-structure)でエンティティファイルを生成（デフォルトはtrue）
+- `--expand-format`: [展開されたフォーマット](https://www.sea-ql.org/SeaORM/docs/generate-entity/expanded-entity-structure)でエンティティファイルを生成
+- `--with-serde`: 自動的にエンティティに`serde`の`Serialize`/`Deserialize`トレイトを導出（`none`、`serialize`、`deserialize`、`both`）（デフォルトは`none`）
+  - `--serde-skip-deserializing-primary-key`: `#[serde(skip_deserializing)]`でラベルをつけられたプライマリキーフィールドを伴ってエンティティモデルを生成
+  - `--serde-skip-hidden-column`: `#[serde(skip)]`でラベルをつけられた隠し列（`_`で始まる列名）を伴ってエンティティモデルを生成
+- `--date-time-crate`: エンティティを生成するために使用する日時クレート（`chrono`、`time`）（デフォルトは`chrono`）
+- `--max-connections`: コネクションプール内の初期化されたデータベースコネクションの最大数（デフォルトは`1`）
+- `--model-extra-derives`: 生成されたモデル構造体に追加する導出マクロ
+- `--model-extra-attributes`: 生成されたモデル構造体に追加する属性
 
 ```bash
-# `bakery`データベースのエンティティファイルを生成して、`src/entity`ディレクトリに出力する。
-sea-orm-cli generate entity \
-    -u sql://sea:sea@localhost/bakery \
-    -o src/entity
+# `bakery`データベースのエンティティファイルを生成して、`src/entity`ディレクトリに出力
+sea-orm-cli generate entity -u protocol://username:password@localhost/bakery -o entity/src
 ```
 
 ## エンティティ構造体
@@ -317,9 +317,9 @@ pub enum Column {
 
 #### 追加のプロパティ
 
-* Unique
-* Indexed
-* Nullable
+- Unique
+- Indexed
+- Nullable
 
 ```rust
 ColumnType::String(None).def().unique().indexed().nullable()
