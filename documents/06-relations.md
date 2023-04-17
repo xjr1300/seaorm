@@ -1,5 +1,21 @@
 # 関連
 
+- [関連](#関連)
+  - [1対1](#1対1)
+    - [関連の定義](#関連の定義)
+    - [逆の関連の定義](#逆の関連の定義)
+  - [1対多の関連](#1対多の関連)
+    - [1対多の関連の定義](#1対多の関連の定義)
+    - [1対多の逆関連の定義](#1対多の逆関連の定義)
+  - [多対多の関連](#多対多の関連)
+    - [多対多の関連の定義](#多対多の関連の定義)
+    - [多対多の逆関連の定義](#多対多の逆関連の定義)
+  - [連鎖した関連](#連鎖した関連)
+    - [遅延ロード](#遅延ロード)
+    - [貪欲なロード(Eager Loading)](#貪欲なロードeager-loading)
+    - [自己参照](#自己参照)
+  - [Bakery Schema](#bakery-schema)
+
 ## 1対1
 
 1対1の関連は、最も基本的なデータベースの関連です。
@@ -180,7 +196,7 @@ impl Related<super::cake::Entity> for Entity {
 }
 ```
 
-あるいは、定義は`DeriveRelation`マクロで短縮することができ、以下は上記と同義である。
+あるいは、定義は`DeriveRelation`マクロで短縮することができ、次は、上記の`RelationTrait`に必要な実装を削除します。
 
 ```rust
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -191,6 +207,13 @@ pub enum Relation {
         to = "super::cake::Column::Id"
     )]
     Cake,
+}
+
+// `Related`トレイトは手動で実装する必要があります。
+impl Related<super::cake::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Cake.def()
+    }
 }
 ```
 
