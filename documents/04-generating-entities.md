@@ -18,6 +18,7 @@
       - [自動インクリメント](#自動インクリメント)
       - [複合キー](#複合キー)
     - [関連](#関連)
+    - [アクティブモデルの振る舞い](#アクティブモデルの振る舞い)
 
 ## `sea-orm-cli`を使用する
 
@@ -315,3 +316,67 @@ pub enum Relation {}
 [Related](https://docs.rs/sea-orm/*/sea_orm/entity/trait.Related.html)トレイトはエンティティ同士を接続するため、両方のエンティティを選択するクエリを構築できます。
 
 関連の詳細については、[Relation](https://www.sea-ql.org/SeaORM/docs/relation/one-to-one/)の章を参照してください。
+
+### アクティブモデルの振る舞い
+
+例えば、カスタム検証ロジックを実行、または副作用をトリガーする、`ActiveModel`の様々なアクションのハンドラーです。
+トランザクション内で、それが実行された後、アクションを中断でき、データベースにそれを保存することを回避します。
+
+```rust
+#[async_trait]
+impl ActiveModelBehavior for ActiveModel {
+    /// デフォルト値で新しいActionModelを作成します。
+    /// また、`Default::default()`によって使用されます。
+    fn new() -> Self {
+        Self {
+            uuid: Set(Uuid::new_v4()),
+            ..ActiveModelTrait::default()
+        }
+    }
+
+    /// 挿入または更新する前にトリガーされます。
+    async fn before_save<C>(self, db: &C, insert: bool) -> Result<Self, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        if self.price.as_ref() <= &0.0 {
+            Err(DbErr::Custom(format!(
+                "[before_save] Invalid Price, insert: {}",
+                insert
+            )))
+        } else {
+            Ok(self)
+        }
+    }
+
+    /// 挿入または更新された後でトリガーされます。
+    async fn after_save<C>(model: Model, db: &C, insert: bool) -> Result<Model, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        Ok(model)
+    }
+
+    /// 削除する前にトリガーされます。
+    async fn before_delete<C>(self, db: &C) -> Result<Self, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        Ok(self)
+    }
+
+    /// 削除した後にトリガーされます。
+    async fn after_delete<C>(self, db: &C) -> Result<Self, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        Ok(self)
+    }
+}
+```
+
+もし、カスタマイズが必要ないのであれば、簡単に記述します。
+
+```rust
+impl ActiveModelBehavior for ActiveModel {}
+```
