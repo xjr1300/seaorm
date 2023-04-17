@@ -1,5 +1,17 @@
 # インストールと設定
 
+- [インストールと設定](#インストールと設定)
+  - [データベースと非同期ランタイム](#データベースと非同期ランタイム)
+    - [DATABASE\_DRIVER](#database_driver)
+    - [ASYNC\_RUNTIME](#async_runtime)
+    - [追加機能](#追加機能)
+  - [スキーマ管理](#スキーマ管理)
+    - [コネクションプール](#コネクションプール)
+    - [コネクションオプション](#コネクションオプション)
+    - [コネクションのクローズ](#コネクションのクローズ)
+  - [デバッグログ](#デバッグログ)
+    - [SQLxログの無効化](#sqlxログの無効化)
+
 ## データベースと非同期ランタイム
 
 まず最初に、[GitHubリポジトリ](https://github.com/SeaQL/sea-orm)にスターを付けてください!
@@ -18,9 +30,9 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 
 データベースドライバを、次から1つ以上選択できます。
 
-* `sqlx-mysql` - SQLx MySQL
-* `sqlx-postgres` - SQLx PostgreSQL
-* `sqlx-sqlite` - SQLx SQLite
+- `sqlx-mysql` - SQLx MySQL
+- `sqlx-postgres` - SQLx PostgreSQL
+- `sqlx-sqlite` - SQLx SQLite
 
 [SQLxドキュメント](https://docs.rs/crate/sqlx/latest/features)も確認してください。
 
@@ -28,17 +40,17 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 
 非同期ランタイムを、次から1つ選択する必要があります。
 
-* `runtime-actix-native-tls`
-* `runtime-async-std-native-tls`
-* `runtime-tokio-native-tls`
-* `runtime-actix-rustls`
-* `runtime-async-std-rustls`
-* `runtime-tokio-rustls`
+- `runtime-actix-native-tls`
+- `runtime-async-std-native-tls`
+- `runtime-tokio-native-tls`
+- `runtime-actix-rustls`
+- `runtime-async-std-rustls`
+- `runtime-tokio-rustls`
 
 基本的に、それらは、`runtime-ASYNC_RUNTIME-TLS_LIB`の形式になっています。
 
-* `ASYNC_RUNTIME`は、`actix`、`async-std`または`tokio`になります。
-* `TLS_LIB`は、`native-tls`か`rustls`のどちらかになります。
+- `ASYNC_RUNTIME`は、`actix`、`async-std`または`tokio`になります。
+- `TLS_LIB`は、`native-tls`か`rustls`のどちらかになります。
 
 1. `Rust`のWebフレームワークに対応するASYNC_RUNTIMEを選択してください。
 2. `native-tls`はプラットフォームのネイティブセキュリティ機能を使用しますが、`rustls`は純粋な`Rust`の実装です。
@@ -51,16 +63,16 @@ sea-orm = { version = "^0", features = [ <DATABASE_DRIVER>, <ASYNC_RUNTIME>, "ma
 
 ### 追加機能
 
-* `debug-print` - ロガーにすべてのSQL文を出力
-* `mock` - ユニットテスト用のモックインタフェース
-* `macros` - 便利な手続き型マクロ
-* `with-chrono` - [chrono](https://crates.io/crates/chrono)型サポート
-* `with-time` - [time](https://crates.io/crates/time)型サポート
-* `with-json` - [serde-json](https://crates.io/crates/serde-json)型サポート
-* `with-rust-decimal` - [rust_decimal](https://crates.io/crates/rust_decimal)型サポート
-* `with-bigdecimal` - [bigdecimal](https://crates.io/crates/bigdecimal)型サポート
-* `postgres-array` - Postgresの配列型サポート
-* `sea-orm-internal` - 安定していない内部API（再エクスポートしたSQLx型にアクセスするために）を導入
+- `debug-print` - ロガーにすべてのSQL文を出力
+- `mock` - ユニットテスト用のモックインタフェース
+- `macros` - 便利な手続き型マクロ
+- `with-chrono` - [chrono](https://crates.io/crates/chrono)型サポート
+- `with-time` - [time](https://crates.io/crates/time)型サポート
+- `with-json` - [serde-json](https://crates.io/crates/serde-json)型サポート
+- `with-rust-decimal` - [rust_decimal](https://crates.io/crates/rust_decimal)型サポート
+- `with-bigdecimal` - [bigdecimal](https://crates.io/crates/bigdecimal)型サポート
+- `postgres-array` - Postgresの配列型サポート
+- `sea-orm-internal` - 安定していない内部API（再エクスポートしたSQLx型にアクセスするために）を導入
 
 ## スキーマ管理
 
