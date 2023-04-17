@@ -4,6 +4,7 @@
     "bigdecimal",
     "chrono",
     "cust",
+    "HHMMSS",
     "Iden",
     "jsonrpsee",
     "rustls",

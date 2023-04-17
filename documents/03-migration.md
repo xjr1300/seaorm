@@ -163,3 +163,258 @@ use migration::{Migrator, MigratorTrait};
 let connection = sea_orm::Database::connect(&database_url).await?;
 Migrator::up(&connection, None).await?;
 ```
+
+## マイグレーションの記述
+
+それぞれのマイグレーションは、`up`と`down`の2つのメソッドを含んでいます。
+`up`メソッドは、新しいテーブル、列またはインデックスを追加するようなデータベーススキーマを変更するために使用され、一方`down`メソッドは、`up`メソッドによって実行されたアクションを元に戻します。
+
+### マイグレーションの作成
+
+`sea-orm-cli migrate generate`コマンドを実行することにより、新しいマイグレーションファイルを作成します。
+
+```bash
+sea-orm-cli migrate generate NAME_OF_MIGRATION [--local-time]
+
+# 例えば、下に表示された`migration/src/m20220101_000001_create_table.rs`を生成するためには次を実行
+sea-orm-cli migrate generate create_table
+```
+
+下のテンプレートを使用してマイグレーションファイルを作成することもできます。
+ファイルの名前は`mYYYYMMDD_HHMMSS_migration_name.rs`の形式に従います。
+
+```rust
+// migration/src/m20220101_000001_create_table.rs
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .create_table( ... )
+            .await
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table( ... )
+            .await
+    }
+}
+```
+
+さらに、[MigratorTrait::migrations](https://docs.rs/sea-orm-migration/*/sea_orm_migration/migrator/trait.MigratorTrait.html#tymethod.migrations)メソッドの中に新しいマイグレーションを含める必要があります。
+マイグレーションが時間の順番でソートされていなければならないことに注意してください。
+
+```rust
+// migration/src/lib.rs
+pub use sea_orm_migration::*;
+
+mod m20220101_000001_create_table;
+
+pub struct Migrator;
+
+#[async_trait]
+impl MigratorTrait for Migrator {
+    fn migrations() -> Vec<Box<dyn MigrationTrait>> {
+        vec![
+            Box::new(m20220101_000001_create_table::Migration),
+        ]
+    }
+}
+```
+
+### マイグレーションの定義
+
+APIリファレンスの[SchemaManager](https://docs.rs/sea-orm-migration/*/sea_orm_migration/manager/struct.SchemaManager.html)を参照してください。
+
+> `SchemaManger`構造体は、`create_table`、`create_index`メソッドなど、SQLのDDL文を実行するために必要なメソッドが定義されています。
+
+#### SeaQuery
+
+SeaQueryのDDL文のクイックツアーを受けるために[ここ](https://github.com/SeaQL/sea-query#table-create)をクリックしてください。
+
+マイグレーション内で使用される識別子を定義するために、[sea_query::Iden](https://github.com/SeaQL/sea-query#iden)が必要になるかもしれません。
+
+```rust
+#[derive(Iden)]
+enum Post {
+    Table,
+    Id,
+    Title,
+    #[iden = "text"] // 識別子の名前を変更
+    Text,
+    Category,
+}
+
+assert_eq!(Post::Table.to_string(), "post");
+assert_eq!(Post::Id.to_string(), "id");
+assert_eq!(Post::Title.to_string(), "title");
+assert_eq!(Post::Text.to_string(), "text");
+```
+
+##### スキーマ作成メソッド
+
+* テーブルの作成
+
+```rust
+use sea_orm::{EnumIter, Iterable};
+
+#[derive(Iden)]
+enum Post {
+    Table,
+    Id,
+    Title,
+    #[iden = "text"] // 識別子の名前を変更
+    Text,
+    Category,
+}
+
+#[derive(Iden, EnumIter)]
+pub enum Category {
+    Table,
+    #[iden = "Feed"]
+    Feed,
+    #[iden = "Story"]
+    Story,
+}
+
+manager
+    .create_table(
+        Table::create()
+            .table(Post::Table)
+            .if_not_exists()
+            .col(
+                ColumnDef::new(Post::Id)
+                    .integer()
+                    .not_null()
+                    .auto_increment()
+                    .primary_key(),
+            )
+            .col(ColumnDef::new(Post::Title).string().not_null())
+            .col(ColumnDef::new(Post::Text).string().not_null())
+            .col(
+                ColumnDef::new(Column::Category)
+                    .enumeration(Category, [Category::Feed, Category::Story]),
+                    // または、下のように記述します。
+                    // 機能するために必要なことを覚えておいてください。
+                    // 1. `EnumIter`を導出する必要があります。
+                    // 2. スコープ内に`Iterable`をインポートして、
+                    // 3. `Category::Table`が最初のバリアントであることを確認してください。
+                    .enumeration(Category, Category::iter().skip(1)),
+            )
+            .to_owned(),
+    )
+    .await
+```
+
+* インデックスの作成
+
+```rust
+manager.create_index(sea_query::Index::create()..)
+```
+
+* 外部キーの作成
+
+```rust
+manager.create_foreign_key(sea_query::ForeignKey::create()..)
+```
+
+* データ型の作成（PostgreSQLのみ）
+
+```rust
+use sea_orm::{EnumIter, Iterable};
+
+#[derive(Iden, EnumIter)]
+pub enum Category {
+    Table,
+    #[iden = "Feed"]
+    Feed,
+    #[iden = "Story"]
+    Story,
+}
+
+manager
+    .create_type(
+        Type::create()
+            .as_enum(Category::Table)
+            .values([Category::Feed, Category::Story])
+            // または、下のように記述します。
+            // 機能するために必要なことを覚えておいてください。
+            // 1. `EnumIter`を導出する必要があります。
+            // 2. スコープ内に`Iterable`をインポートして、
+            // 3. `Category::Table`が最初のバリアントであることを確認してください。
+            .values(Category::iter().skip(1))
+            .to_owned(),
+    )
+    .await?;
+```
+
+##### スキーマ変更メソッド
+
+* テーブル削除
+
+```rust
+use entity::post;
+
+manager.drop_table(sea_query::Table::drop()..)
+```
+
+* テーブル変更
+
+```rust
+manager.alter_table(sea_query::Table::alter()..)
+```
+
+* テーブル名変更
+
+```rust
+manager.rename_table(sea_query::Table::rename()..)
+```
+
+* テーブル行削除（`Truncate`）
+
+```rust
+manager.truncate_table(sea_query::Table::truncate()..)
+```
+
+* インデックス削除
+
+```rust
+manager.drop_index(sea_query::Index::drop()..)
+```
+
+* 外部キー削除
+
+```rust
+manager.drop_foreign_key(sea_query::ForeignKey::drop()..)
+```
+
+* データ型変更（PostgreSQLのみ）
+
+```rust
+manager.alter_type(sea_query::Type::alter()..)
+```
+
+* データ型削除（PostgreSQLのみ）
+
+```rust
+manager.drop_type(sea_query::Type::drop()..)
+```
+
+##### スキーマ検証メソッド
+
+* テーブル存在確認
+
+```rust
+manager.has_table(table_name)
+```
+
+* 列存在確認
+
+```rust
+manager.has_column(table_name, column_name)
+```
