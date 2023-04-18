@@ -11,6 +11,7 @@
       - [PostgreSQL](#postgresql-1)
       - [MySQL](#mysql-1)
       - [SQLite](#sqlite-1)
+  - [インデックスの作成](#インデックスの作成)
 
 ## テーブルの作成
 
@@ -346,4 +347,47 @@ assert_eq!(
         .join(" ")
     ),
 );
+```
+
+## インデックスの作成
+
+[Schema::create_index_from_entity](https://docs.rs/sea-orm/*/sea_orm/schema/struct.Schema.html#method.create_index_from_entity)、または手動で[IndexCreateStatement](https://docs.rs/sea-query/*/sea_query/index/struct.IndexCreateStatement.html)を構築することで、インデックスを作成できます。
+
+[インデックスのある](https://github.com/SeaQL/sea-orm/blob/master/src/tests_cfg/indexes.rs)エンティティを次に示します。
+
+```rust
+// indexes.rs
+impl ColumnTrait for Column {
+    type EntityName = Entity;
+
+    fn def(&self) -> ColumnDef {
+        match self {
+            Self::Index1Attr => ColumnType::Integer.def().indexed(),
+            Self::Index2Attr => ColumnType::Integer.def().indexed().unique(),
+        }
+    }
+}
+```
+
+```rust
+use sea_orm::{sea_query, tests_cfg::*, Schema};
+
+let builder = db.get_database_backend();
+let schema = Schema::new(builder);
+
+let stmts = schema.create_index_from_entity(indexes::Entity);
+
+let idx = sea_query::Index::create()
+    .name("idx-indexes-index1_attr")
+    .table(indexes::Entity)
+    .col(indexes::Column::Index1Attr)
+    .to_owned();
+assert_eq!(builder.build(&stmts[0]), builder.build(&idx));
+
+let idx = sea_query::Index::create()
+    .name("idx-indexes-index2_attr")
+    .table(indexes::Entity)
+    .col(indexes::Column::Index2Attr)
+    .to_owned();
+assert_eq!(builder.build(&stmts[1]), builder.build(&idx));
 ```
