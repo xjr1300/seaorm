@@ -12,6 +12,7 @@
     "jsonrpsee",
     "Newtype",
     "rustls",
+    "SAVEPOINT",
     "Seaography",
     "seaql",
     "serde",

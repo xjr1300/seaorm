@@ -19,8 +19,12 @@
   - [サブクエリ](#サブクエリ)
     - [サブクエリの条件式](#サブクエリの条件式)
   - [トランザクション](#トランザクション)
-    - [`クロージャー`の内部](#クロージャーの内部)
+    - [クロージャーと共に](#クロージャーと共に)
     - [`begin` \& `commit`/`rollback`](#begin--commitrollback)
+    - [ネストしたトランザクション](#ネストしたトランザクション)
+    - [分離レベルとアクセスモード](#分離レベルとアクセスモード)
+      - [分離レベル](#分離レベル)
+      - [アクセスモード](#アクセスモード)
   - [ストリーミング](#ストリーミング)
   - [特別な`ActiveModel`](#特別なactivemodel)
 
@@ -412,13 +416,15 @@ assert_eq!(
 
 ## トランザクション
 
-トランザクションは、ACIDを保証しながら実行するSQL文のグループである。
-2つのトランザクションAPIがある。
+トランザクションは、ACIDを保証しながら実行されるSQL文のグループです。
+2つのトランザクションAPIがあります。
 
-### `クロージャー`の内部
+### クロージャーと共に
 
-トランザクションは、クロージャーが`Ok`を返却したときコミットされ、`Err`を返却したときロールバックされる。
-2番めと3番めの型パラメーターはそれぞれ`Ok`と`Err`の型である。
+[クロージャーでトランザクション](https://docs.rs/sea-orm/*/sea_orm/trait.TransactionTrait.html#tymethod.transaction)を実行できます。
+トランザクションは、クロージャーが`Ok`を返却した場合にコミットされ、`Err`を返却した場合にロールバックされます。
+2番目と3番目の型パラメーターは、それぞれ`Ok`と`Err`型です。
+`async_closure`は未だ安定化されていないため、それを`Pin<Box<>_>>`する必要があります。
 
 ```rust
 // <Fn, A, B> -> Result<A, B>
@@ -446,13 +452,118 @@ db.transaction::<_, (), DbErr>(|txn| {
 .await;
 ```
 
-これは多くのケースで好ましい方法である。
-しかしながら、非同期ブロック内で参照のキャプチャを試みている間に、不可能なライフタイムに遭遇する場合は、以下のAPIが答えである。
+これは多くのケースで好ましい方法です。
+しかし、もし非同期ブロック内で参照をキャプチャーを試みているが、*不可能なライフタイム*に遭遇した場合は、次のAPIが解決さくです。
 
 ### `begin` & `commit`/`rollback`
 
-`begin`メソッドはトランザクションを開始して、`commit`または`rollback`メソッドがそれに続く。
-もし`txn`がスコープを外れた時、トランザクションは自動的にロールバックされる。
+`begin`がトランザクションを開始して、`commit`または`rollback`がそれに続きます。
+もし、`txn`がスコープを外れた場合、そのトランザクションは自動的にロールバックされます。
+
+```rust
+let txn = db.begin().await?;
+
+bakery::ActiveModel {
+    name: Set("SeaSide Bakery".to_owned()),
+    profit_margin: Set(10.4),
+    ..Default::default()
+}
+.save(&txn)
+.await?;
+
+bakery::ActiveModel {
+    name: Set("Top Bakery".to_owned()),
+    profit_margin: Set(15.0),
+    ..Default::default()
+}
+.save(&txn)
+.await?;
+
+txn.commit().await?;
+```
+
+### ネストしたトランザクション
+
+ネストしたトランザクションは、データベースの`SAVEPOINT`で実行されています。
+下の例は、クロージャーAPIで振る舞いを説明しています。
+
+```rust
+assert_eq!(Bakery::find().all(txn).await?.len(), 0);
+
+ctx.db.transaction::<_, _, DbErr>(|txn| {
+    Box::pin(async move {
+        let _ = bakery::ActiveModel {..}.save(txn).await?;
+        let _ = bakery::ActiveModel {..}.save(txn).await?;
+        assert_eq!(Bakery::find().all(txn).await?.len(), 2);
+
+        // ネストしたトランザクションをコミットすることを試みます。
+        txn.transaction::<_, _, DbErr>(|txn| {
+            Box::pin(async move {
+                let _ = bakery::ActiveModel {..}.save(txn).await?;
+                assert_eq!(Bakery::find().all(txn).await?.len(), 3);
+
+                // ネストしたトランザクションをロールバックすることを試みます。
+                assert!(txn.transaction::<_, _, DbErr>(|txn| {
+                        Box::pin(async move {
+                            let _ = bakery::ActiveModel {..}.save(txn).await?;
+                            assert_eq!(Bakery::find().all(txn).await?.len(), 4);
+
+                            Err(DbErr::Query(RuntimeErr::Internal(
+                                "Force Rollback!".to_owned(),
+                            )))
+                        })
+                    })
+                    .await
+                    .is_err()
+                );
+
+                assert_eq!(Bakery::find().all(txn).await?.len(), 3);
+
+                // 二重にネストしたトランザクションをコミットすることを試みます。
+                txn.transaction::<_, _, DbErr>(|txn| {
+                    Box::pin(async move {
+                        let _ = bakery::ActiveModel {..}.save(txn).await?;
+                        assert_eq!(Bakery::find().all(txn).await?.len(), 4);
+
+                        Ok(())
+                    })
+                })
+                .await;
+
+                assert_eq!(Bakery::find().all(txn).await?.len(), 4);
+
+                Ok(())
+            })
+        })
+        .await;
+
+        Ok(())
+    })
+})
+.await;
+
+assert_eq!(Bakery::find().all(txn).await?.len(), 4);
+```
+
+### 分離レベルとアクセスモード
+
+`0.10.5`に導入された、[transaction_with_config](https://docs.rs/sea-orm/*/sea_orm/trait.TransactionTrait.html#tymethod.transaction_with_config)と[begin_with_config](https://docs.rs/sea-orm/*/sea_orm/trait.TransactionTrait.html#tymethod.begin_with_config)は、[分離レベル](https://docs.rs/sea-orm/*/sea_orm/enum.IsolationLevel.html)と[アクセスモード](https://docs.rs/sea-orm/*/sea_orm/enum.AccessMode.html)を指定できるようにします。
+
+#### 分離レベル
+
+`RepeatableRead`: 同じトランザクション内で一貫性のある読み取りは、最初の読み込みによって確立されたスナップショットを読み込みます。
+
+`ReadCommitted`: 同じトランザクション内であっても、一般性のある読み取りごとに、それ独自の新しいスナップショットが作成されて読み込みます。
+
+`ReadUncommitted`: SELECT文がブロックされずに実行されますが、前のバージョンの行が使用される可能性があります。
+
+`Serializable`: 現在のトランザクションのすべての文が、最初のクエリの前にコミットされた行のみ、またはこのトランザクション内でデータを変更する文が実行した結果を見ることができます。
+
+#### アクセスモード
+
+`ReadOnly`: データは、このトランザクション内で変更されません。
+
+`ReadWrite`: データは、このトランザクジョン内で変更されます（デフォルト）。
 
 ## ストリーミング
 
