@@ -567,20 +567,22 @@ assert_eq!(Bakery::find().all(txn).await?.len(), 4);
 
 ## ストリーミング
 
-効率を改善することを目的に、メモリ割り当てを減らすためには、何らかの`Select`で非同期ストリームを使用する。
+メモリ割り当てを減らして、効率を改善するために、任意の選択で[futures](https://crates.io/crates/futures)クレートの非同期ストリームを使用します。
 
 ```rust
-// Stream all fruits
+use futures::TryStreamExt;
+
+// すべてのフルーツをストリーミングします。
 let mut stream = Fruit::find().stream(db).await?;
 
 while let Some(item) = stream.try_next().await? {
     let item: fruit::ActiveModel = item.into();
-    // do something with item
+    // itemで何かします。
 }
 ```
 
 ```rust
-// Stream all fruits with name contains character "a"
+// 名前に文字"a"を含むすべてのフルーツをストリーミングします。
 let mut stream = Fruit::find()
     .filter(fruit::Column::Name.contains("a"))
     .order_by_asc(fruit::Column::Name)
@@ -588,16 +590,16 @@ let mut stream = Fruit::find()
     .await?;
 ```
 
-ストリームオブジェクトはドロップされるまで排他的に接続を保持するため、接続が他から借用されることを防ぐ必要があることに注意すること。
+ストリームオブジェクトはドロップされるまで排他的にコネクションを保持するため、他によってコネクションが借用されることを防ぐ必要があることに注意してください。
 
 ```rust
 {
     let s1 = Fruit::find().stream(db).await?;
     let s2 = Fruit::find().stream(db).await?;
     let s3 = Fruit::find().stream(db).await?;
-    // 3 connections are held
+    // 3つのコネクションが保持されています。
 }
-// All streams are dropped and connections are returned to the connection pool
+// すべてのストリームがドロップされ、コネクションはコネクションプールに戻されます。
 ```
 
 ## 特別な`ActiveModel`
