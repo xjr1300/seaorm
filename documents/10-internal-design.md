@@ -11,15 +11,15 @@
     - [関連（Relation）](#関連relation)
     - [関連した（Related）](#関連したrelated)
     - [リンクした（Linked）](#リンクしたlinked)
-  - [マクロによる派生](#マクロによる派生)
-    - [EntityModel](#entitymodel)
-    - [Entity](#entity)
-    - [Column](#column)
-    - [Primary Key](#primary-key)
-    - [Model](#model)
-    - [Active Model](#active-model)
-    - [Relation](#relation)
-    - [Iterable](#iterable)
+  - [導出マクロ](#導出マクロ)
+    - [エンティティモデル](#エンティティモデル)
+    - [エンティティ](#エンティティ-1)
+    - [列](#列-1)
+    - [プライマリーキー](#プライマリーキー-1)
+    - [モデル](#モデル-1)
+    - [アクティブモデル](#アクティブモデル-1)
+    - [関連](#関連)
+    - [イテラブル](#イテラブル)
   - [Dieselとの比較](#dieselとの比較)
     - [アーキテクチャ](#アーキテクチャ)
     - [プログラミングパラダイム](#プログラミングパラダイム)
@@ -104,44 +104,44 @@
 
 [Linked](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトは、連鎖した関連、自己参照関連、そして2つのエンティティ間の複数の関連を含んだ、複雑な結合パスを定義します。
 
-## マクロによる派生
+## 導出マクロ
 
-### EntityModel
+### エンティティモデル
 
-[EntityModel](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは、与えられたモデルから`Entity`、`Column`および`PrimaryKey`を自動的に生成する、'全能な'マクロである。
+[EntityModel](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)導出マクロは、与えられた`Model`から`Entity`、`Column`および`PrimaryKey`を自動的に生成する、'全能な'マクロです。
 
-### Entity
+### エンティティ
 
-`DeriveEntity`派生マクロは、`Entity`のために[EntityTrait]()を実装して、現在のスコープ内の既存の`Model`、`Column`、`PrimaryKey`および関連を類推する。
-また、`Entity`のために[Iden](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)と[IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)の実装を提供する。
+`DeriveEntity`導出マクロは、`Entity`に[EntityTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro/#)を実装して、現在のスコープ内に存在する`Model`、`Column`、`PrimaryKey`及び`Relation`を仮定します。
+また、それは、`Entity`のために[Iden](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)と[IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)の実装を提供します。
 
-### Column
+### 列
 
-[DeriveColumn](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは、`Column`のために[ColumnTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装する。
-[Iden](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)と[IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装することにより、各列の識別子を定義する。
-[EnumIter](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)も派生されており、すべての列挙型のバリアントをイテレーションさせる。
+[DeriveColumn](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは、`Column`に[ColumnTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装します。
+それは、[Iden](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)と[IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装することにより、それぞれの列の識別子を定義します。
+また、[EnumIter](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)も導出されて、すべての列挙型のバリアントを反復させます。
 
-### Primary Key
+### プライマリーキー
 
-[DerivePrimaryKey](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは`PrimaryKey`のために、プライマリキーと列の間の面倒なマッピングを定義する[PriamryKeyToColumn](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装する。
-[EnumIter](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)も派生されており、すべての列挙型のバリアントをイテレーションさせる。
+[DerivePrimaryKey](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)導出マクロは、`PrimaryKey`にプライマリーキーと列間の面倒なマッピングを定義する[PriamryKeyToColumn](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装します。
+また、[EnumIter](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)も導出されて、すべての列挙型のバリアントを反復させます。
 
-### Model
+### モデル
 
-[DeriveModel](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは、`Model`のためにモデルのすべての属性のセッターとゲッターを提供する`ModelTrait`を実装する。
-また、クエリ結果を対応する`Model`に変換する[FromQueryResult](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装する。
+[DeriveModel](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)導出マクロは、`Model`にモデルのすべての属性のセッターとゲッターを提供する`ModelTrait`を実装します。
+また、問い合わせ結果を対応する`Model`に変換する[FromQueryResult](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)も実装します。
 
-### Active Model
+### アクティブモデル
 
-[DeriveActiveModel](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは`ActriveModel`のためにアクティブモデル内のすべてのアクティブバリューのセッターとゲッターを提供する[ActiveModelTrait]を実装する。
+[DeriveActiveModel](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)導出マクロは、`ActriveModel`にアクティブモデル内のすべてのアクティブ値のセッターとゲッターを提供する[ActiveModelTrait]を実装します。
 
-### Relation
+### 関連
 
-[DeriveRelation](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは`Relation`のために[RelationTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装する。
+[DeriveRelation](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)導出マクロは、`Relation`に[RelationTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装します。
 
-### Iterable
+### イテラブル
 
-[EnumIter](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)派生マクロは、列挙型のすべての￥バリアントを￥イテレーションするために[Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装する。
+[EnumIter](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)導出マクロは、列挙型のすべてのバリアントを反復するために[Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/derive-macro#)を実装します。
 
 ## Dieselとの比較
 
