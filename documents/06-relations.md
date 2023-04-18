@@ -19,7 +19,7 @@
     - [リンク](#リンク)
     - [カスタム結合](#カスタム結合)
   - [データローダー](#データローダー)
-  - [Bakery Schema](#bakery-schema)
+  - [ベーカリースキーマ](#ベーカリースキーマ)
 
 ## 1対1
 
@@ -703,8 +703,8 @@ let fruits_in_stock: Vec<Vec<fruit::Model>> = cakes.load_many(
 ).await?;
 ```
 
-## Bakery Schema
+## ベーカリースキーマ
 
-![Bakery Schema](https://raw.githubusercontent.com/SeaQL/sea-orm/master/tests/common/bakery_chain/bakery_chain_erd.svg)
+![ベーカリースキーマ](https://raw.githubusercontent.com/SeaQL/sea-orm/master/tests/common/bakery_chain/bakery_chain_erd.svg)
 
-さまざまなデータ型と関係を持つ完全なスキーマの例については、SeaORMのテストスイートの[Bakery Schema]で参照できる。
+様々なデータ型と関連を持つより複雑なスキーマの例については、SeaORMのテストスイートの[ベーカリースキーマ](https://github.com/SeaQL/sea-orm/tree/master/tests/common/bakery_chain)で参照できます。
