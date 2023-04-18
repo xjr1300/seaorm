@@ -13,8 +13,8 @@
     - [ネストした条件](#ネストした条件)
     - [流暢な条件問い合わせ](#流暢な条件問い合わせ)
   - [集計関数](#集計関数)
-    - [Group by（グループ化）](#group-byグループ化)
-    - [Having(グループ化した結果のフィルタ)](#havingグループ化した結果のフィルタ)
+    - [Group by](#group-by)
+    - [Having](#having)
   - [特殊な結合](#特殊な結合)
   - [サブクエリ](#サブクエリ)
     - [サブクエリにおける条件式](#サブクエリにおける条件式)
@@ -259,12 +259,12 @@ assert_eq!(
 
 ## 集計関数
 
-SeaORMが検索した結果を`group_by`メソッドでグループ化できる。
-グループ化された結果セットを制限したい場合は、`having`メソッドでできる。
+SeaORMが検索した結果を`group_by`メソッドでグループ化できます。
+もし、グループ化された結果の集合を制限したい場合、`having`メソッドはそれを得ることを支援します。
 
-### Group by（グループ化）
+### Group by
 
-`group_by`めwソッドは、列または[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)を受け取る。
+`group_by`メソッドは、エンティティの列または複雑な[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)を受け取る。
 
 ```rust
 assert_eq!(
@@ -276,11 +276,22 @@ assert_eq!(
         .to_string(),
     r#"SELECT "cake"."name" FROM "cake" GROUP BY "cake"."name""#
 );
+
+assert_eq!(
+    cake::Entity::find()
+        .select_only()
+        .column_as(cake::Column::Id.count(), "count")
+        .column_as(cake::Column::Id.sum(), "sum_of_id")
+        .group_by(cake::Column::Name)
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"SELECT COUNT("cake"."id") AS "count", SUM("cake"."id") AS "sum_of_id" FROM "cake" GROUP BY "cake"."name""#
+);
 ```
 
-### Having(グループ化した結果のフィルタ)
+### Having
 
-`having`メソッドは、前のセクションで紹介した何らかの条件式を受け取る。
+`having`メソッドは、前節で紹介した任意の条件式を受け取れます。
 
 ```rust
 assert_eq!(
@@ -291,7 +302,23 @@ assert_eq!(
         .to_string(),
     "SELECT `cake`.`id`, `cake`.`name` FROM `cake` HAVING `cake`.`id` = 4 AND `cake`.`id` = 5"
 );
+
+assert_eq!(
+    cake::Entity::find()
+        .select_only()
+        .column_as(cake::Column::Id.count(), "count")
+        .column_as(cake::Column::Id.sum(), "sum_of_id")
+        .group_by(cake::Column::Name)
+        .having(cake::Column::Id.gt(6))
+        .build(DbBackend::MySql)
+        .to_string(),
+    "SELECT COUNT(`cake`.`id`) AS `count`, SUM(`cake`.`id`) AS `sum_of_id` FROM `cake` GROUP BY `cake`.`name` HAVING `cake`.`id` > 6"
+);
 ```
+
+> ℹ️ INFO
+>
+> `max`、`min`、`sum`、`count`のような集計関数は、[ColumnTrait](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/trait.ColumnTrait.html)で利用できます。
 
 ## 特殊な結合
 
