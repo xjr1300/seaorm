@@ -27,6 +27,8 @@
       - [アクセスモード](#アクセスモード)
   - [ストリーミング](#ストリーミング)
   - [カスタム`ActiveModel`](#カスタムactivemodel)
+  - [エラー処理](#エラー処理)
+    - [データベース特有のエラーを解析する](#データベース特有のエラーを解析する)
 
 ## カスタム選択
 
@@ -693,4 +695,45 @@ assert_eq!(
         cake_id: NotSet,
     }
 );
+```
+
+## エラー処理
+
+SeaORMにおけるすべてのランタイムエラーは、[DbErr](https://docs.rs/sea-orm/*/sea_orm/error/enum.DbErr.html)で表現されています。
+
+### データベース特有のエラーを解析する
+
+任意の`DbErr::Conn`、`DbErr::Exec`または`DbErr::Query`から、データベース特有のエラーコードを取得できます。
+
+```rust
+let mud_cake = cake::ActiveModel {
+    id: Set(1),
+    name: Set("Moldy Cake".to_owned()),
+    price: Set(dec!(10.25)),
+    gluten_free: Set(false),
+    serial: Set(Uuid::new_v4()),
+    bakery_id: Set(None),
+};
+
+// プライマリーキー（`id`列）に1を設定した新しいケーキを挿入します。
+let cake = mud_cake.save(db).await.expect("could not insert cake");
+
+// 再び同じ行を挿入すると、それぞれの行のプライマリーキーはユニークであるべきなので、それは失敗しました。
+let error: DbErr = cake
+    .into_active_model()
+    .insert(db)
+    .await
+    .expect_err("inserting should fail due to duplicate primary key");
+
+match error {
+    DbErr::Exec(RuntimeErr::SqlxError(error)) => match error {
+        Error::Database(e) => {
+            // データベース（このケースはMySQL）によって投げられたエラーコードを確認して、
+            // `23000`は`ER_DUP_KEY`で、テーブルに重複したキーがあることを意味します。
+            assert_eq!(e.code().unwrap(), "23000");
+        }
+        _ => panic!("Unexpected sqlx-error kind"),
+    },
+    _ => panic!("Unexpected Error kind"),
+}
 ```
