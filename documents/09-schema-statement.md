@@ -1,12 +1,18 @@
 # スキーマ文
 
 - [スキーマ文](#スキーマ文)
-  - [テーブル作成](#テーブル作成)
+  - [テーブルの作成](#テーブルの作成)
     - [PostgreSQL](#postgresql)
     - [MySQL](#mysql)
     - [SQLite](#sqlite)
+  - [列挙型の作成](#列挙型の作成)
+    - [文字列型と整数型の列挙型](#文字列型と整数型の列挙型)
+    - [ネイティブなデータベースの列挙型](#ネイティブなデータベースの列挙型)
+      - [PostgreSQL](#postgresql-1)
+      - [MySQL](#mysql-1)
+      - [SQLite](#sqlite-1)
 
-## テーブル作成
+## テーブルの作成
 
 手動で[TableCreateStatement](https://docs.rs/sea-query/*/sea_query/table/struct.TableCreateStatement.html)を記述する代わりに、データベースにテーブルを作成するために、[Schema::create_table_from_entity](https://docs.rs/sea-orm/*/sea_orm/schema/struct.Schema.html#method.create_table_from_entity)を使用して`Entity`からそれを導出できます。
 
@@ -143,5 +149,201 @@ assert_eq!(
         ]
         .join(" ")
     )
+);
+```
+
+## 列挙型の作成
+
+[Schema](https://docs.rs/sea-orm/*/sea_orm/schema/struct.Schema.html)ヘルパー構造体で、列挙型の列を持つデータベーステーブルを作成するSQL文を生成できます。
+
+### 文字列型と整数型の列挙型
+
+これは、Rustの列挙型にマッピングする普通の文字列型／整数型の列です。
+エンティティ定義の例を次に示します。
+
+```rust
+// active_enum.rs
+use sea_orm::entity::prelude::*;
+
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[sea_orm(schema_name = "public", table_name = "active_enum")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: i32,
+    pub category: Option<Category>,
+    pub color: Option<Color>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "String(Some(1))")]
+pub enum Category {
+    #[sea_orm(string_value = "B")]
+    Big,
+    #[sea_orm(string_value = "S")]
+    Small,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "i32", db_type = "Integer")]
+pub enum Color {
+    #[sea_orm(num_value = 0)]
+    Black,
+    #[sea_orm(num_value = 1)]
+    White,
+}
+```
+
+例えるのであれば、列挙型は単なる普通のデータベース列です。
+
+```rust
+use sea_orm::{sea_query, Schema};
+
+let builder = db.get_database_backend();
+let schema = Schema::new(builder);
+
+assert_eq!(
+    builder.build(&schema.create_table_from_entity(active_enum::Entity)),
+    builder.build(
+        &sea_query::Table::create()
+            .table(active_enum::Entity.table_ref())
+            .col(
+                sea_query::ColumnDef::new(active_enum::Column::Id)
+                    .integer()
+                    .not_null()
+                    .auto_increment()
+                    .primary_key(),
+            )
+            .col(sea_query::ColumnDef::new(active_enum::Column::Category).string_len(1))
+            .col(sea_query::ColumnDef::new(active_enum::Column::Color).integer())
+            .to_owned()
+    )
+);
+```
+
+### ネイティブなデータベースの列挙型
+
+列挙型は、異なるデータベースを通じてサポートしています。
+それらを1つずつ確認します。
+
+次のエンティティを考えてください。
+
+```rust
+// active_enum.rs
+use sea_orm::entity::prelude::*;
+
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[sea_orm(schema_name = "public", table_name = "active_enum")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: i32,
+    pub tea: Option<Tea>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "tea")]
+pub enum Tea {
+    #[sea_orm(string_value = "EverydayTea")]
+    EverydayTea,
+    #[sea_orm(string_value = "BreakfastTea")]
+    BreakfastTea,
+}
+```
+
+`db_type`と追加の`enum_name`属性に注意してください。
+
+#### PostgreSQL
+
+PostgreSQLの列挙型は[TypeCreateStatement](https://docs.rs/sea-query/*/sea_query/extension/postgres/struct.TypeCreateStatement.html)で定義されており、それは[Schema::create_enum_from_entity](https://docs.rs/sea-orm/*/sea_orm/schema/struct.Schema.html#method.create_enum_from_entity)メソッドで`Entity`から作成されます。
+
+それを[Schema::create_enum_from_active_enum](https://docs.rs/sea-orm/*/sea_orm/schema/struct.Schema.html#method.create_enum_from_active_enum)メソッドで`ActiveEnum`から作成することもできます。
+
+```rust
+use sea_orm::{Schema, Statement};
+
+let db_postgres = DbBackend::Postgres;
+let schema = Schema::new(db_postgres);
+
+assert_eq!(
+    schema
+        .create_enum_from_entity(active_enum::Entity)
+        .iter()
+        .map(|stmt| db_postgres.build(stmt))
+        .collect::<Vec<_>>(),
+    [Statement::from_string(
+        db_postgres,
+        r#"CREATE TYPE "tea" AS ENUM ('EverydayTea', 'BreakfastTea')"#.to_owned()
+    ),]
+);
+
+assert_eq!(
+    db_postgres.build(&schema.create_enum_from_active_enum::<Tea>()),
+    Statement::from_string(
+        db_postgres,
+        r#"CREATE TYPE "tea" AS ENUM ('EverydayTea', 'BreakfastTea')"#.to_owned()
+    )
+);
+
+assert_eq!(
+    db_postgres.build(&schema.create_table_from_entity(active_enum::Entity)),
+    Statement::from_string(
+        db_postgres,
+        [
+            r#"CREATE TABLE "public"."active_enum" ("#,
+            r#""id" serial NOT NULL PRIMARY KEY,"#,
+            r#""tea" tea"#,
+            r#")"#,
+        ]
+        .join(" ")
+    ),
+);
+```
+
+#### MySQL
+
+MySQLにおいて、列挙型はテーブル作成で定義されるため、[Schema::create_table_from_entity](https://docs.rs/sea-orm/*/sea_orm/schema/struct.Schema.html#method.create_table_from_entity)をただ1回呼び出す必要があります。
+
+```rust
+use sea_orm::{Schema, Statement};
+
+let db_mysql = DbBackend::MySql;
+let schema = Schema::new(db_mysql);
+
+assert_eq!(
+    db_mysql.build(&schema.create_table_from_entity(active_enum::Entity)),
+    Statement::from_string(
+        db_mysql,
+        [
+            "CREATE TABLE `active_enum` (",
+            "`id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,",
+            "`tea` ENUM('EverydayTea', 'BreakfastTea')",
+            ")",
+        ]
+        .join(" ")
+    ),
+);
+```
+
+#### SQLite
+
+SQLiteで列挙型はサポートされていないため、それは`TEXT`として保存されます。
+
+```rust
+use sea_orm::{Schema, Statement};
+
+let db_sqlite = DbBackend::Sqlite;
+let schema = Schema::new(db_sqlite);
+
+assert_eq!(
+    db_sqlite.build(&schema.create_enum_from_entity(active_enum::Entity)),
+    Statement::from_string(
+        db_sqlite,
+        [
+            "CREATE TABLE `active_enum` (",
+            "`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,",
+            "`tea` text",
+            ")",
+        ]
+        .join(" ")
+    ),
 );
 ```
