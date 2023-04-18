@@ -1,81 +1,108 @@
 # 内部実装
 
+- [内部実装](#内部実装)
+  - [トレイトと型](#トレイトと型)
+    - [エンティティ](#エンティティ)
+    - [列](#列)
+    - [プライマリーキー](#プライマリーキー)
+    - [モデル](#モデル)
+    - [アクティブモデル](#アクティブモデル)
+    - [アクティブ列挙型](#アクティブ列挙型)
+    - [関連（Relation）](#関連relation)
+    - [関連した（Related）](#関連したrelated)
+    - [リンクした（Linked）](#リンクしたlinked)
+  - [マクロによる派生](#マクロによる派生)
+    - [EntityModel](#entitymodel)
+    - [Entity](#entity)
+    - [Column](#column)
+    - [Primary Key](#primary-key)
+    - [Model](#model)
+    - [Active Model](#active-model)
+    - [Relation](#relation)
+    - [Iterable](#iterable)
+  - [Dieselとの比較](#dieselとの比較)
+    - [アーキテクチャ](#アーキテクチャ)
+    - [プログラミングパラダイム](#プログラミングパラダイム)
+    - [スキーマビルダ](#スキーマビルダ)
+    - [類似点](#類似点)
+    - [最後に](#最後に)
+
 ## トレイトと型
 
-### Entity
+### エンティティ
 
-[EntityTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトを実装したユニット構造体は、データベースのテーブルを表現する。
+[EntityTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトを実装したユニット構造体は、データベースのテーブルを表現します。
 
-このトレイトは、次のエンティティの属性を含んでいる。
+このトレイトは、次のエンティティの属性を含んでいます。
 
-* テーブル名（[EntityName](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
-* 列（[ColumnTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
-* 関連（[RelationTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
-* プライマリーキー（[PrimaryKeyTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)と[PrimaryKeyToColumn](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
+- テーブル名（[EntityName](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
+- 列（[ColumnTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
+- 関連（[RelationTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
+- プライマリーキー（[PrimaryKeyTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)と[PrimaryKeyToColumn](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装）
 
-このトレイトはCRUD操作のためにAPIを提供する。
+このトレイトは、CRUD操作するAPIも提供しています。
 
-* 選択: `find`、`find_*`
-* 挿入: `insert`、`insert_*`
-* 更新: `update`、`update_*`
-* 削除: `delete`、`delete_*`
+- 選択: `find`、`find_*`
+- 挿入: `insert`、`insert_*`
+- 更新: `update`、`update_*`
+- 削除: `delete`、`delete_*`
 
-### Column
+### 列
 
-[ColumnTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトを実装した列挙型は、テーブルのすべての列と列の型と属性を表現する。
+[ColumnTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトを実装した列挙型は、テーブルのすべての列と列の型と属性を表現します。
 
-このトレイトは以下を実装する。
+このトレイトは、次を実装します。
 
-* [IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は静的ライフタイムで列の識別子とマッピングする機能を提供する。
-* [Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)はSeaORMコアにすべての列のバリアントをイテレートさせる。
+- [IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は、静的ライフタイムで列の識別子とのマッピングを提供しています。
+- [Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は、SeaORMコアにすべての列のバリアントを反復させます。
 
-### Primary Key
+### プライマリーキー
 
-[PrimaryKeyTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトを実装した列挙型でプライマリーキーを表現する。
-それぞれのプライマリーキーのバリアントは、列のバリアントとの対応を持つ。
+[PrimaryKeyTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトを実装した列挙型は、プライマリーキーを表現します。
+それぞれのプライマリーキーのバリアントは、列のバリアントとの対応する必要があります。
 
-このトレイトは以下を実装する。
+このトレイトは、次を実装します。
 
-* [IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は静的ライフタイムで列の識別子とマッピングする機能を提供する。
-* [Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)はSeaORMコアにすべての列のバリアントをイテレートさせる。
+- [IdenStatic](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は静的ライフタイムでプライマリーキーの識別子とのマッピングを提供します。
+- [Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)はSeaORMコアにすべてのプライマリーキーのバリアントを反復させます。
 
-### Model
+### モデル
 
-[ModelTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した構造体で、メモリにクエリの結果を蓄積する。
-これは、読み込み目的で使用することを意図しており、ステートレスである。
+[ModelTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した構造体は、クエリ結果をメモリに保存します。
+これは、読み込み目的で使用されることを意図しており、ステートレスです。
 
-このトレイトは以下を実装する。
+このトレイトは、次を実装します。
 
-* [FromQueryResult](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)はクエリの結果を対応するモデルに変換する。
+- [FromQueryResult](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は、プリミティブな問い合わせの結果を対応するモデルに変換します。
 
-### Active Model
+### アクティブモデル
 
-[ActiveModelTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した構造体で、挿入/更新操作を表現する。
-これは編集されてデータベースに保存されることを意図している。
+[ActiveModelTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した構造体は、挿入／更新操作を表現します。
+これは、編集され、データベースに保存されることを意図しています。
 
-このトレイトは以下を実装する。
+このトレイトは、次を実装します。
 
-* [ActiveModelBehavior](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)はアクティブモデルの異なる操作のハンドラを定義する。
+- [ActiveModelBehavior](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は、アクティブモデルの様々な操作のハンドラを定義します。
 
-### Active Enum
+### アクティブ列挙型
 
-[ActiveEnum](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した列挙型でRUSTの列挙型のバリアントとして、データベースに保存される値を表現する。
+[ActiveEnum](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した列挙型は、Rustの列挙型のバリアントとしてデータベースに保存される値を表現します。
 
-### Relation
+### 関連（Relation）
 
-[RelationTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した列挙型で他のエンティティとの関連を定義する。
+[RelationTrait](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)を実装した列挙型は、他のエンティティとの関連を定義します。
 
-このトレイトは以下を実装する。
+このトレイトは、次を実装します。
 
-* [Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は、SeaORMコアにすべての関連のバリアントをイテレートさせるう。
+- [Iterable](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は、SeaORMコアにすべての関連のバリアントを反復させます。
 
-### Related
+### 関連した（Related）
 
-ジェネリックトリトで、[Related](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)は、関連するエンティティ同士をクエリする結合パスを定義して、特に多対多関連で便利である。
+[Related](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)はジェネリックトレイトで、互いに関連付けられたエンティティ同士を問い合わせする結合パスを定義して、特に多対多関連で便利です。
 
-### Linked
+### リンクした（Linked）
 
-[Linked](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトは、つながった関連、自己関連および2つのエンティティの複数の関連を含む複雑な結合パスを定義する。
+[Linked](https://www.sea-ql.org/SeaORM/docs/internal-design/trait-and-type#)トレイトは、連鎖した関連、自己参照関連、そして2つのエンティティ間の複数の関連を含んだ、複雑な結合パスを定義します。
 
 ## マクロによる派生
 
