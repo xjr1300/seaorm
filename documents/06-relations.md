@@ -18,6 +18,7 @@
     - [関連](#関連-1)
     - [リンク](#リンク)
     - [カスタム結合](#カスタム結合)
+  - [データローダー](#データローダー)
   - [Bakery Schema](#bakery-schema)
 
 ## 1対1
@@ -630,6 +631,76 @@ assert_eq!(
     ]
     .join(" ")
 );
+```
+
+## データローダー
+
+> 💡 TIP
+>
+> もし、拡張されネストした関連を問い合わせるWeb APIを構築している場合、GraphQLサーバーを構築することを検討してください。
+> [Seaography](https://www.sea-ql.org/Seaography/)は、SeaORMエンティティを使用して、GraphQLリゾルバを構築するGraphQLフレームワークです。
+> 詳細は[Seaography入門](https://www.sea-ql.org/blog/2022-09-27-getting-started-with-seaography/)を参照してください。
+
+[LoaderTrait](https://docs.rs/sea-orm/*/sea_orm/query/trait.LoaderTrait.html)は、バッチで関連したエンティティを読み込むAPIを提供します。
+
+この1対多関連を考えてください。
+
+```rust
+let cake_with_fruits: Vec<(cake::Model, Vec<fruit::Model>)> = Cake::find()
+    .find_with_related(Fruit)
+    .all(db)
+    .await?;
+```
+
+そのSQLクエリは次のように生成されます。
+
+```sql
+SELECT
+    "cake"."id" AS "A_id",
+    "cake"."name" AS "A_name",
+    "fruit"."id" AS "B_id",
+    "fruit"."name" AS "B_name",
+    "fruit"."cake_id" AS "B_cake_id"
+FROM "cake"
+LEFT JOIN "fruit" ON "cake"."id" = "fruit"."cake_id"
+ORDER BY "cake"."id" ASC
+```
+
+これはいいのですが、もしN（1対NのN）が大量の場合、1側（1対Nの1を示すケーキ）データは多く重複されます。
+この結果は、より多くのデータがネットワーク経由で転送されます。
+多対多のケースにおいて、両側が重複しているかもしれません。
+ローダを使用することは、それぞれのモデルは1回だけ転送されることを保証します。
+この理由で、現在、SeaORMは2つ以上のエンティティを貪欲な読み込みをすることができません。
+
+次の読み込みは上記と同じデータを読み込みますが、2つのクエリです。
+
+```rust
+let cakes: Vec<cake::Model> = Cake::find().all(db).await?;
+let fruits: Vec<Vec<fruit::Model>> = cakes.load_many(Fruit, db).await?;
+
+for (cake, fruits) in cakes.into_iter().zip(fruits.into_iter()) { .. }
+```
+
+```sql
+SELECT "cake"."id", "cake"."name" FROM "cake"
+SELECT "fruit"."id", "fruit"."name", "fruit"."cake_id" FROM "fruit" WHERE "fruit"."cake_id" IN (..)
+```
+
+これらを一緒に積み重ねることができます。
+
+```rust
+let cakes: Vec<cake::Model> = Cake::find().all(db).await?;
+let fruits: Vec<Vec<fruit::Model>> = cakes.load_many(Fruit, db).await?;
+let fillings: Vec<Vec<filling::Model>> = cakes.load_many_to_many(Filling, CakeFilling, db).await?;
+```
+
+高度なユースケースにおいて、関連したエンティティにフィルタを適用できます。
+
+```rust
+let fruits_in_stock: Vec<Vec<fruit::Model>> = cakes.load_many(
+    fruit::Entity::find().filter(fruit::Column::Stock.gt(0i32))
+    db
+).await?;
 ```
 
 ## Bakery Schema
