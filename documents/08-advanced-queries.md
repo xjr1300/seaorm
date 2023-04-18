@@ -15,7 +15,7 @@
   - [集計関数](#集計関数)
     - [Group by](#group-by)
     - [Having](#having)
-  - [特殊な結合](#特殊な結合)
+  - [カスタム結合](#カスタム結合)
   - [サブクエリ](#サブクエリ)
     - [サブクエリにおける条件式](#サブクエリにおける条件式)
   - [トランザクション](#トランザクション)
@@ -320,11 +320,11 @@ assert_eq!(
 >
 > `max`、`min`、`sum`、`count`のような集計関数は、[ColumnTrait](https://docs.rs/sea-orm/*/sea_orm/entity/prelude/trait.ColumnTrait.html)で利用できます。
 
-## 特殊な結合
+## カスタム結合
 
-複雑な結合選択クエリを構築するために`join`メソッドを使用できる。
-`join`メソッドはエンティティファイルで定義された何らかの`RelationDef`を受け取り、`belong_to`メソッドでリレーションを定義できる。
-内部結合、左外部結合および右外部結合のような結合の種類は、`JoinType`を使用することで記述する。
+複雑な結合選択問い合わせを構築するために`join`メソッドを使用できます。
+`join`メソッドはエンティティファイルで定義された任意の`RelationDef`を受け取り、その上、`belong_to`メソッドで関連を定義できます。
+内部結合、左外部結合および右外部結合のような結合の種類は、`JoinType`を使用することで指定されます。
 
 ```rust
 use sea_orm::{JoinType, RelationTrait};
@@ -333,24 +333,41 @@ use sea_query::Expr;
 assert_eq!(
     cake::Entity::find()
         .column_as(filling::Column::Id.count(), "count")
+        .column_as(
+            Expr::tbl(Alias::new("fruit_alias"), fruit::Column::Name).into_simple_expr(),
+            "fruit_name"
+        )
+        // この場で`RelationDef`を構築します。
         .join_rev(
-            // construct `RelationDef` on the fly
             JoinType::InnerJoin,
             cake_filling::Entity::belongs_to(cake::Entity)
                 .from(cake_filling::Column::CakeId)
                 .to(cake::Column::Id)
                 .into()
         )
-        // reuse a `Relation` from existing Entity
+        // 存在するエンティティから`Relation`を再利用します。
         .join(JoinType::InnerJoin, cake_filling::Relation::Filling.def())
+        // カスタム条件でテーブルエイリアスと結合します。
+        .join_as(
+            JoinType::LeftJoin,
+            cake::Relation::Fruit
+                .def()
+                .on_condition(|_left, right| {
+                    Expr::tbl(right, fruit::Column::Name)
+                        .like("%tropical%")
+                        .into_condition()
+                }),
+            Alias::new("fruit_alias")
+        )
         .group_by(cake::Column::Id)
         .having(filling::Column::Id.count().equals(Expr::value(2)))
         .build(DbBackend::MySql)
         .to_string(),
     [
-        "SELECT `cake`.`id`, `cake`.`name`, COUNT(`filling`.`id`) AS `count` FROM `cake`",
+        "SELECT `cake`.`id`, `cake`.`name`, COUNT(`filling`.`id`) AS `count`, `fruit_alias`.`name` AS `fruit_name` FROM `cake`",
         "INNER JOIN `cake_filling` ON `cake_filling`.`cake_id` = `cake`.`id`",
         "INNER JOIN `filling` ON `cake_filling`.`filling_id` = `filling`.`id`",
+        "LEFT JOIN `fruit` AS `fruit_alias` ON `cake`.`id` = `fruit_alias`.`cake_id` AND `fruit_alias`.`name` LIKE '%tropical%'",
         "GROUP BY `cake`.`id`",
         "HAVING COUNT(`filling`.`id`) = 2",
     ]
@@ -358,8 +375,8 @@ assert_eq!(
 );
 ```
 
-複雑なクエリの結果を操作するために`FromQueryResult`トレイトから派生した特殊の構造体を使用できる。
-詳細は[ここ](https://www.sea-ql.org/SeaORM/docs/advanced-query/custom-select#handling-custom-selects)を参照すること。
+複雑なクエリの結果を操作するために、`FromQueryResult`トレイトから導出したカスタム構造体を使用できます。
+詳細は[ここ](https://www.sea-ql.org/SeaORM/docs/advanced-query/custom-select#handling-custom-selects)を参照してください。
 
 ## サブクエリ
 
