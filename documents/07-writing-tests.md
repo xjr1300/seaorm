@@ -11,7 +11,7 @@
     - [2. トランザクションエラー](#2-トランザクションエラー-1)
     - [3. 振る舞いのエラー](#3-振る舞いのエラー-1)
   - [モックインターフェース](#モックインターフェース)
-    - [クエリ結果のモック](#クエリ結果のモック)
+    - [問い合わせ結果のモック](#問い合わせ結果のモック)
     - [実行結果のモック](#実行結果のモック)
   - [SQLiteの使用](#sqliteの使用)
     - [統合テスト](#統合テスト)
@@ -106,26 +106,30 @@ MySQLとPostgreSQLのより高度な機能をシミュレートできるSQLite�
 
 ## モックインターフェース
 
-モックデータベースインターフェースを使用して、アプリケーションロジックをユニットテストできる。
+モックデータベースインターフェースを使用して、アプリケーションロジックをユニットテストできます。
 
-モックデータベースはデータを持たないため、CRUD操作を実行したときに返却される予期されたデータを定義する必要がある。
+> ℹ️ INFO
+>
+> 優しいリマインダー: `mock`フィーチャーを有効にする必要があります。
 
-- `query result`は選択操作を提供しなければならない。
-- `exec result`は挿入、更新及び削除操作をサポートする機能を提供しなければならない。
+モックデータベースは、その中にデータを持たないため、CRUD操作が実行されたときに、返却されることが予期されるデータを定義する必要があります。
 
-アプリケーションロジックが正しいことを確信するために、モックデータベースでトランザクションログを検証することができる。
+- 問い合わせ結果は、選択操作を支援するために提供されなければなりません。
+- 実行結果は、挿入、更新そして削除操作を支援するために提供されなければなりません。
 
-モックデータベースへの接続を使用してユニットテストを記述する方法は、[ここ](https://github.com/SeaQL/sea-orm/blob/master/src/executor/paginator.rs#L250)にある。
+アプリケーションロジックが正しいことを確信するために、モックデータベースでトランザクションログを検証することもできます。
 
-### クエリ結果のモック
+モックへの接続を使用するユニットテストを記述する方法は、[ここ](https://github.com/SeaQL/sea-orm/blob/master/src/executor/paginator.rs#L250)を参照してください。
 
-`MockDatabase::new(DatabaseBackend::Postgres)`でPostgreSQL用のモックデータベースを作成する。
-クエリ結果は、`append_query_results`メソッドを使用して準備する。
-複数のクエリ結果を表現するために、ベクタのベクタを渡していることに注意すること。ベクタ内の各ベクタは、1つ以上のモデルを含んでいる。
-最終的に、モックデータベースを接続に変換して、通常の実際の接続のようにCRUD操作を実行するために使用する。
+### 問い合わせ結果のモック
 
-`MockDatabase`について1つ特別なことは、モックデータベースのトランザクションログをチェックできることである。
-モックデータベースで実行されたSQLクエリは記録され、アプリケーションロジックの正確性を確信するために、それぞれのログを検証できる。
+`MockDatabase::new(DatabaseBackend::Postgres)`でPostgreSQL用のモックデータベースを作成します。
+そして、問い合わせ結果は、`append_query_results`メソッドを使用して準備されます。
+複数の問い合わせ結果を表現するために、それぞれ1つ以上のモデルを持つ、ベクタのベクタを渡していることに注意してください。
+最終的に、それを接続に変換して、普通の接続のように、それをCRUD操作を実行するために使用します。
+
+`MockDatabase`で特別な1つは、それのトランザクションログを確認できることです。
+モックデータベースで実行されたSQLクエリは記録され、アプリケーションロジックの正確性を確信するために、それぞれのログを検証できます。
 
 ```rust
 #[cfg(test)]
@@ -137,15 +141,15 @@ mod tests {
 
     #[async_std::test]
     async fn test_find_cake() -> Result<(), DbErr> {
-        // Create MockDatabase with mock query results
+        // 問い合わせ結果のモックと共に、MockDatabaseを作成します。
         let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![
-                // First query result
+            .append_query_results([
+                // 最初の問い合わせ結果
                 vec![cake::Model {
                     id: 1,
                     name: "New York Cheese".to_owned(),
                 }],
-                // Second query result
+                // 2番目の問い合わせ結果
                 vec![
                     cake::Model {
                         id: 1,
@@ -157,10 +161,24 @@ mod tests {
                     },
                 ],
             ])
+            .append_query_results([
+                // 3番目の問い合わせ結果
+                [(
+                    cake::Model {
+                        id: 1,
+                        name: "Apple Cake".to_owned(),
+                    },
+                    fruit::Model {
+                        id: 2,
+                        name: "Apple".to_owned(),
+                        cake_id: Some(1),
+                    },
+                )],
+            ])
             .into_connection();
 
-        // Find a cake from MockDatabase
-        // Return the first query result
+        // MockDatabaseからケーキを検索します。
+        // 最初の問い合わせ結果を返却します。
         assert_eq!(
             cake::Entity::find().one(&db).await?,
             Some(cake::Model {
@@ -169,11 +187,12 @@ mod tests {
             })
         );
 
-        // Find all cakes from MockDatabase
         // Return the second query result
+        // MockDatabaseからすべてのケーキを検索します。
+        // 2番目の問い合わせ結果を返却します。
         assert_eq!(
             cake::Entity::find().all(&db).await?,
-            vec![
+            [
                 cake::Model {
                     id: 1,
                     name: "New York Cheese".to_owned(),
@@ -185,19 +204,43 @@ mod tests {
             ]
         );
 
-        // Checking transaction log
+        // 関連したフルーツと共に、すべてのケーキを検索します。
+        assert_eq!(
+            cake::Entity::find()
+                .find_also_related(fruit::Entity)
+                .all(&db)
+                .await?,
+            [(
+                cake::Model {
+                    id: 1,
+                    name: "Apple Cake".to_owned(),
+                },
+                Some(fruit::Model {
+                    id: 2,
+                    name: "Apple".to_owned(),
+                    cake_id: Some(1),
+                })
+            )]
+        );
+
+        // トランザクションログを確認します。
         assert_eq!(
             db.into_transaction_log(),
-            vec![
+            [
                 Transaction::from_sql_and_values(
                     DatabaseBackend::Postgres,
                     r#"SELECT "cake"."id", "cake"."name" FROM "cake" LIMIT $1"#,
-                    vec![1u64.into()]
+                    [1u64.into()]
                 ),
                 Transaction::from_sql_and_values(
                     DatabaseBackend::Postgres,
                     r#"SELECT "cake"."id", "cake"."name" FROM "cake""#,
-                    vec![]
+                    []
+                ),
+                Transaction::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    r#"SELECT "cake"."id" AS "A_id", "cake"."name" AS "A_name", "fruit"."id" AS "B_id", "fruit"."name" AS "B_name", "fruit"."cake_id" AS "B_cake_id" FROM "cake" LEFT JOIN "fruit" ON "cake"."id" = "fruit"."cake_id""#,
+                    []
                 ),
             ]
         );
@@ -209,8 +252,8 @@ mod tests {
 
 ### 実行結果のモック
 
-実行結果のモックは、クエリ結果のモックととても似ており、違いは`append_exec_results`メソッドを使用して、ユニットテストで挿入、更新及び削除操作を実行する。
-`append_exec_results`メソッドは`MockExecResult`のベクタを受け取り、各々は対応する操作の実行結果を表現する。
+これは、問い合わせ結果のモックと非常に似ており、その違いは、ここで`append_exec_results`メソッドを使用して、挿入、更新そして削除操作を、単体テストで実行することです。
+`append_exec_results`メソッドは、`MockExecResult`のベクタを受け取り、それぞれは対応する操作の実行結果を表現しています。
 
 ```rust
 #[cfg(test)]
@@ -222,19 +265,19 @@ mod tests {
 
     #[async_std::test]
     async fn test_insert_cake() -> Result<(), DbErr> {
-        // Create MockDatabase with mock execution result
+        // 実行結果のモックと共に、MockDatabaseを作成します。
         let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![
-                vec![cake::Model {
+            .append_query_results([
+                [cake::Model {
                     id: 15,
                     name: "Apple Pie".to_owned(),
                 }],
-                vec![cake::Model {
+                [cake::Model {
                     id: 16,
                     name: "Apple Pie".to_owned(),
                 }],
             ])
-            .append_exec_results(vec![
+            .append_exec_results([
                 MockExecResult {
                     last_insert_id: 15,
                     rows_affected: 1,
@@ -246,13 +289,13 @@ mod tests {
             ])
             .into_connection();
 
-        // Prepare the ActiveModel
+        // ActiveModelを準備します。
         let apple = cake::ActiveModel {
             name: Set("Apple Pie".to_owned()),
             ..Default::default()
         };
 
-        // Insert the ActiveModel into MockDatabase
+        // MockDatabaseにActiveModelを挿入します。
         assert_eq!(
             apple.clone().insert(&db).await?,
             cake::Model {
@@ -261,23 +304,23 @@ mod tests {
             }
         );
 
-        // If you want to check the last insert id
+        // 最後に挿入されたIDを確認したい場合
         let insert_result = cake::Entity::insert(apple).exec(&db).await?;
         assert_eq!(insert_result.last_insert_id, 16);
 
-        // Checking transaction log
+        // トランザクションログを確認します。
         assert_eq!(
             db.into_transaction_log(),
-            vec![
+            [
                 Transaction::from_sql_and_values(
                     DatabaseBackend::Postgres,
                     r#"INSERT INTO "cake" ("name") VALUES ($1) RETURNING "id", "name""#,
-                    vec!["Apple Pie".into()]
+                    ["Apple Pie".into()]
                 ),
                 Transaction::from_sql_and_values(
                     DatabaseBackend::Postgres,
                     r#"INSERT INTO "cake" ("name") VALUES ($1) RETURNING "id""#,
-                    vec!["Apple Pie".into()]
+                    ["Apple Pie".into()]
                 ),
             ]
         );
@@ -289,24 +332,22 @@ mod tests {
 
 ## SQLiteの使用
 
-データベース特有の機能を必要としないアプリケーションロジックをテストしたい場合、モックデータベースにSQLiteを使用することは良い選択である。
+もし、データベース特有の機能を必要としないアプリケーションロジックをテストする場合、SQLiteは良い選択になります。
 
-[ここ](https://github.com/SeaQL/sea-orm/blob/master/tests/basic.rs)の簡単な例がある。
+[ここ](https://github.com/SeaQL/sea-orm/blob/master/tests/basic.rs)の単純な例を参照してください。
 
 ### 統合テスト
 
-[統合テスト](https://doc.rust-lang.org/rust-by-example/testing/integration_testing.html)で、より複雑なテストケースを実行することを推奨する。
-以下のコードの断片は、データベースへの接続、スキーマの準備及びテストの実行ステップを説明している。
+[統合テスト](https://doc.rust-lang.org/rust-by-example/testing/integration_testing.html)で、より複雑なテストケースを実行することを推奨します。
+次のコードスニペットは、データベースへの接続、スキーマの準備及びテストの実行のステップを説明しています。
 
 ```rust
 async fn main() -> Result<(), DbErr> {
-    // Connecting SQLite
+    // SQLiteに接続します。
     let db = Database::connect("sqlite::memory:").await?;
-
-    // Setup database schema
+    // データベーススキーマを準備します。
     setup_schema(&db).await?;
-
-    // Performing tests
+    // テストを実行します。
     testcase(&db).await?;
 
     Ok(())
@@ -315,18 +356,17 @@ async fn main() -> Result<(), DbErr> {
 
 ### データベーススキーマの準備
 
-テストするためにSQLiteデータベースのテーブルを作成するために、[TableCreateStatement](https://docs.rs/sea-query/*/sea_query/table/struct.TableCreateStatement.html)を手動で記述する代わりに、[Schema::create_table_from_entity](https://docs.rs/sea-orm/0.5/sea_orm/schema/struct.Schema.html#method.create_table_from_entity)メソッドを使用して`Entity`から派生させることができる。
+テストするためにSQLiteデータベースのテーブルを作成するために、[TableCreateStatement](https://docs.rs/sea-query/*/sea_query/table/struct.TableCreateStatement.html)を手動で記述する代わりに、[Schema::create_table_from_entity](https://docs.rs/sea-orm/0.5/sea_orm/schema/struct.Schema.html#method.create_table_from_entity)メソッドを使用して`Entity`から導出できます。
 
 ```rust
 async fn setup_schema(db: &DbConn) {
-
-    // Setup Schema helper
+    // スキーマヘルパーを準備します。
     let schema = Schema::new(DbBackend::Sqlite);
 
-    // Derive from Entity
+    // （スキーマを）Entityから導出します。
     let stmt: TableCreateStatement = schema.create_table_from_entity(MyEntity);
 
-    // Or setup manually
+    // または手動で（スキーマを）準備します。
     assert_eq!(
         stmt.build(SqliteQueryBuilder),
         Table::create()
@@ -340,7 +380,7 @@ async fn setup_schema(db: &DbConn) {
             .build(SqliteQueryBuilder)
     );
 
-    // Execute create table statement
+    // テーブル作成文を実行します。
     let result = db
         .execute(db.get_database_backend().build(&stmt))
         .await;
@@ -349,7 +389,7 @@ async fn setup_schema(db: &DbConn) {
 
 ### テストの実行
 
-テストケースを実行して結果に対して確認する。
+テストケースを実行して結果に対してアサートします。
 
 ```rust
 async fn testcase(db: &DbConn) -> Result<(), DbErr> {
