@@ -26,7 +26,7 @@
       - [分離レベル](#分離レベル)
       - [アクセスモード](#アクセスモード)
   - [ストリーミング](#ストリーミング)
-  - [特別な`ActiveModel`](#特別なactivemodel)
+  - [カスタム`ActiveModel`](#カスタムactivemodel)
 
 ## カスタム選択
 
@@ -602,15 +602,15 @@ let mut stream = Fruit::find()
 // すべてのストリームがドロップされ、コネクションはコネクションプールに戻されます。
 ```
 
-## 特別な`ActiveModel`
+## カスタム`ActiveModel`
 
-`into_active_model`メソッドで`ActiveModel`に変換できる、モデルの部分的なフィールドを持つ`IntoActiveModel`を実装をもつ構造体を作成する。
-例えば、その構造体はREST APIにおいてフォーム送信として使用される。
+`into_active_model`メソッドで`ActiveModel`に変換できる`IntoActiveModel`を実装したモデルの部分的なフィールドを持つ独自の構造体を作成します。
+例えば、その構造体は、REST APIにおいてフォームの提出として利用することができます。
 
-`IntoActiveValue`トレイトは、`into_active_value`メソッドで`Option<T>`を`ActiveValue<T>`に変換する。
+`IntoActiveValue`トレイトは、`into_active_value`メソッドで`Option<T>`を`ActiveValue<T>`に変換します。
 
 ```rust
-// Define regular model as usual
+// 普通通りに、通常のモデルを定義します。
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "fruit")]
 pub struct Model {
@@ -621,16 +621,16 @@ pub struct Model {
 }
 ```
 
-いくつかのフィールドを省略した新しい構造体を作成する。
+いくつかのフィールドを省略した新しい構造体を作成します。
 
 ```rust
 use sea_orm::ActiveValue::NotSet;
 
 #[derive(DeriveIntoActiveModel)]
 pub struct NewFruit {
-    // id is omitted
+    // idが省略されています。
     pub name: String,
-    // it is required as opposed to optional in Model
+    // それ（cake_id）が、モデルにおいてオプションであるのに対して、必須です。
     pub cake_id: i32,
 }
 
@@ -648,7 +648,7 @@ assert_eq!(
 );
 ```
 
-`Option<Option<T>>`は、`Some(None)`によって列をNULLに更新する。
+`Option<Option<T>>`は、`Some(None)`によって列をNULLに更新します。
 
 ```rust
 use sea_orm::ActiveValue::NotSet;
