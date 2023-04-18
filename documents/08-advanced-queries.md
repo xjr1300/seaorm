@@ -1,9 +1,164 @@
 # 高度なクエリ
 
-## 特殊な選択
+- [高度なクエリ](#高度なクエリ)
+  - [カスタム選択](#カスタム選択)
+    - [部分的な属性の選択](#部分的な属性の選択)
+    - [カスタム式の選択](#カスタム式の選択)
+    - [選択結果の処理](#選択結果の処理)
+      - [カスタム構造体](#カスタム構造体)
+      - [構造化されていないタプル](#構造化されていないタプル)
+    - [デフォルトの選択の説明](#デフォルトの選択の説明)
+    - [いくつかの属性のみ選択する](#いくつかの属性のみ選択する)
+    - [特別な式を選択する](#特別な式を選択する)
+    - [特別な選択を操作する](#特別な選択を操作する)
+  - [条件式](#条件式)
+    - [AND条件](#and条件)
+    - [OR条件](#or条件)
+    - [ネストした条件](#ネストした条件)
+  - [集計関数](#集計関数)
+    - [Group by（グループ化）](#group-byグループ化)
+    - [Having(グループ化した結果のフィルタ)](#havingグループ化した結果のフィルタ)
+  - [特殊な結合](#特殊な結合)
+  - [サブクエリ](#サブクエリ)
+    - [サブクエリにおける条件式](#サブクエリにおける条件式)
+  - [トランザクション](#トランザクション)
+    - [`クロージャー`の内部](#クロージャーの内部)
+    - [`begin` \& `commit`/`rollback`](#begin--commitrollback)
+  - [ストリーミング](#ストリーミング)
+  - [特別な`ActiveModel`](#特別なactivemodel)
 
-デフォルトでは、SeaORMは`Column`列挙型で定義されたすべての列を選択する。
-本当に欲しい列のみを選択して、デフォルトの振る舞いを上書きできる。
+## カスタム選択
+
+デフォルトでは、SeaORMは`Column`列挙型で定義されたすべての列を選択します。
+もし、特定の列のみを選択したい場合、そのデフォルトを上書きできます。
+
+```rust
+// すべての列を選択します。
+assert_eq!(
+    cake::Entity::find()
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"SELECT "cake"."id", "cake"."name" FROM "cake""#
+);
+```
+
+### 部分的な属性の選択
+
+`select_ony`メソッドの呼び出しにより、デフォルトの選択をクリアします。
+そして、後で、属性のいくつかまたはカスタム式を選択できます。
+
+```rust
+// 名前列のみを選択します。
+assert_eq!(
+    cake::Entity::find()
+        .select_only()
+        .column(cake::Column::Name)
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"SELECT "cake"."name" FROM "cake""#
+);
+```
+
+もし、1度に複数の属性を選択したい場合、配列で提供できます。
+
+```rust
+assert_eq!(
+    cake::Entity::find()
+        .select_only()
+        .columns([cake::Column::Id, cake::Column::Name])
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"SELECT "cake"."id", "cake"."name" FROM "cake""#
+);
+```
+
+高度な例: 特定の列を除いたすべての列の条件選択の例を次に示します。
+
+```rust
+assert_eq!(
+    cake::Entity::find()
+        .select_only()
+        .columns(cake::Column::iter().filter(|col| match col {
+            cake::Column::Id => false,
+            _ => true,
+        }))
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"SELECT "cake"."name" FROM "cake""#
+);
+```
+
+### カスタム式の選択
+
+`column_as`メソッドで任意のカスタム式を選択して、それは任意の[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)とエイリアスを受け取ります。
+[sea_query::Expr](https://docs.rs/sea-query/*/sea_query/expr/struct.Expr.html)ヘルパーは`SimpleExpr`を構築するために使用します。
+
+```rust
+use sea_query::{Alias, Expr};
+
+assert_eq!(
+    cake::Entity::find()
+        .column_as(Expr::col(cake::Column::Id).max().sub(Expr::col(cake::Column::Id)), "id_diff")
+        .column_as(Expr::cust("CURRENT_TIMESTAMP"), "current_time")
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"SELECT "cake"."id", "cake"."name", MAX("id") - "id" AS "id_diff", CURRENT_TIMESTAMP AS "current_time" FROM "cake""#
+);
+```
+
+### 選択結果の処理
+
+#### カスタム構造体
+
+複雑な問い合わせの結果を処理するために、`FromQueryResult`トレイトから導出したカスタム構造体を使用できます。
+それは、直接モデルに変換できないカスタム列や複数結合を扱うとき、特に役に立ちます。
+それは、（ネイティブな）SQLのような任意の問い合わせの結果を受け取るために使用されるかもしれません。
+
+```rust
+use sea_orm::{FromQueryResult, JoinType, RelationTrait};
+use sea_query::Expr;
+
+#[derive(FromQueryResult)]
+struct CakeAndFillingCount {
+    id: i32,
+    name: String,
+    count: i32,
+}
+
+let cake_counts: Vec<CakeAndFillingCount> = cake::Entity::find()
+    .column_as(filling::Column::Id.count(), "count")
+    .join_rev(
+        // この場で`RelationDef`を構築します。
+        JoinType::InnerJoin,
+        cake_filling::Entity::belongs_to(cake::Entity)
+            .from(cake_filling::Column::CakeId)
+            .to(cake::Column::Id)
+            .into()
+    )
+    // 存在するエンティティから`Relation`を再利用します。
+    .join(JoinType::InnerJoin, cake_filling::Relation::Filling.def())
+    .group_by(cake::Column::Id)
+    .into_model::<CakeAndFillingCount>()
+    .all(db)
+    .await?;
+```
+
+#### 構造化されていないタプル
+
+`into_tuple`メソッドでタプル（または単独の値）を選択できます。
+
+```rust
+use sea_orm::{entity::*, query::*, tests_cfg::cake, DeriveColumn, EnumIter};
+
+let res: Vec<(String, i64)> = cake::Entity::find()
+    .select_only()
+    .column(cake::Column::Name)
+    .column(cake::Column::Id.count())
+    .group_by(cake::Column::Name)
+    .into_tuple()
+    .all(&db)
+    .await?;
+```
 
 ### デフォルトの選択の説明
 
@@ -119,7 +274,6 @@ assert_eq!(
 ### OR条件
 
 `Condition::any`メソッドでAND条件式を構築して、`add`メソッドで[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)に何らかの条件式を追加する。
-
 
 ```rust
 assert_eq!(
@@ -449,5 +603,3 @@ assert_eq!(
     }
 );
 ```
-
-
