@@ -7,14 +7,11 @@
     - [選択結果の処理](#選択結果の処理)
       - [カスタム構造体](#カスタム構造体)
       - [構造化されていないタプル](#構造化されていないタプル)
-    - [デフォルトの選択の説明](#デフォルトの選択の説明)
-    - [いくつかの属性のみ選択する](#いくつかの属性のみ選択する)
-    - [特別な式を選択する](#特別な式を選択する)
-    - [特別な選択を操作する](#特別な選択を操作する)
   - [条件式](#条件式)
     - [AND条件](#and条件)
     - [OR条件](#or条件)
     - [ネストした条件](#ネストした条件)
+    - [流暢な条件問い合わせ](#流暢な条件問い合わせ)
   - [集計関数](#集計関数)
     - [Group by（グループ化）](#group-byグループ化)
     - [Having(グループ化した結果のフィルタ)](#havingグループ化した結果のフィルタ)
@@ -160,99 +157,15 @@ let res: Vec<(String, i64)> = cake::Entity::find()
     .await?;
 ```
 
-### デフォルトの選択の説明
-
-必要であれば、`select_only`メソッドを呼び出して、デフォルトの選択を説明する。
-そして、いくつかの属性や特別な式を選択できることを、後で説明する。
-
-```rust
-// Selecting all columns
-assert_eq!(
-    cake::Entity::find()
-        .build(DbBackend::Postgres)
-        .to_string(),
-    r#"SELECT "cake"."id", "cake"."name" FROM "cake""#
-);
-```
-
-### いくつかの属性のみ選択する
-
-`select_only`メソッドと`column`メソッドを使用することで、望んだ属性のみを選択できる。
-
-```rust
-// Selecting the name column only
-assert_eq!(
-    cake::Entity::find()
-        .select_only()
-        .column(cake::Column::Name)
-        .build(DbBackend::Postgres)
-        .to_string(),
-    r#"SELECT "cake"."name" FROM "cake""#
-);
-```
-
-### 特別な式を選択する
-
-`column_as`メソッドでいくつかの特別な式を選択して、`sea_query::SimpleExpr`とエイリアスを得られる。
-`SimpleExpr`を構築するために`sea_query::Expr`ヘルパーを使用する。
-
-```rust
-use sea_query::{Alias, Expr};
-
-assert_eq!(
-    cake::Entity::find()
-        .column_as(Expr::col(cake::Column::Id).max().sub(Expr::col(cake::Column::Id)), "id_diff")
-        .column_as(Expr::cust("CURRENT_TIMESTAMP"), "current_time")
-        .build(DbBackend::Postgres)
-        .to_string(),
-    r#"SELECT "cake"."id", "cake"."name", MAX("id") - "id" AS "id_diff", CURRENT_TIMESTAMP AS "current_time" FROM "cake""#
-);
-```
-
-### 特別な選択を操作する
-
-複雑なクエリの結果を操作するために、`FromQueryResult`トレイトから派生した特別な構造体を使用できる。
-直接モデルに変換できない特別な列や複数の結合を扱うときに特に役立つ。
-その特別な構造体は、クエリやSQLの結果を受け取るときに使用される。
-
-```rust
-use sea_orm::{FromQueryResult, JoinType, RelationTrait};
-use sea_query::Expr;
-
-#[derive(FromQueryResult)]
-struct CakeAndFillingCount {
-    id: i32,
-    name: String,
-    count: i32,
-}
-
-let cake_counts: Vec<CakeAndFillingCount> = cake::Entity::find()
-    .column_as(filling::Column::Id.count(), "count")
-    .join_rev(
-        // construct `RelationDef` on the fly
-        JoinType::InnerJoin,
-        cake_filling::Entity::belongs_to(cake::Entity)
-            .from(cake_filling::Column::CakeId)
-            .to(cake::Column::Id)
-            .into()
-    )
-    // reuse a `Relation` from existing Entity
-    .join(JoinType::InnerJoin, cake_filling::Relation::Filling.def())
-    .group_by(cake::Column::Id)
-    .into_model::<CakeAndFillingCount>()
-    .all(db)
-    .await?;
-```
-
 ## 条件式
 
-`filter`メソッドでSeaORMが検索する条件を追加できる。
-また、`having`メソッドを使用して集計を制限できる。
-それら両方は、パラメータとして[sea_query::Condition](https://docs.rs/sea-query/0.12.7/sea_query/query/struct.Condition.html)を受け取る。
+`filter`メソッドでSeaORMが検索するために条件を追加できます。
+また、`having`メソッドで集計結果を制限することもできます。
+それらは両方とも、パラメーターとして[sea_query::Condition](https://docs.rs/sea-query/0.12.7/sea_query/query/struct.Condition.html)を受け取ります。
 
 ### AND条件
 
-`Condition::all`メソッドでAND条件式を構築して、`add`メソッドで[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)に何らかの条件式を追加する。
+`Condition::all`メソッドでAND条件式を構築して、`add`メソッドで[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)に任意の条件式を追加します。
 
 ```rust
 assert_eq!(
@@ -273,7 +186,7 @@ assert_eq!(
 
 ### OR条件
 
-`Condition::any`メソッドでAND条件式を構築して、`add`メソッドで[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)に何らかの条件式を追加する。
+`Condition::any`メソッドでOR条件式を構築して、`add`メソッドで[sea_query::SimpleExpr](https://docs.rs/sea-query/*/sea_query/expr/enum.SimpleExpr.html)に任意の条件式を追加します。
 
 ```rust
 assert_eq!(
@@ -294,8 +207,8 @@ assert_eq!(
 
 ### ネストした条件
 
-`add`メソッドは、他の条件式を受け取ることができる。
-これを実施するために、柔軟な複雑なネストした条件を構築できる。
+`add`メソッドは、他の条件式を受け取ることもできます。
+これをするために、柔軟な複雑でネストした条件を構築できます。
 
 ```rust
 assert_eq!(
@@ -320,6 +233,27 @@ assert_eq!(
         "WHERE (`cake`.`id` <= 30 AND `cake`.`name` LIKE '%Chocolate%') OR",
         "(`cake`.`id` >= 1 AND `cake`.`name` LIKE '%Cheese%')",
     ].join(" ")
+);
+```
+
+### 流暢な条件問い合わせ
+
+もし、`Option<T>`に`Some<_>`が与えられた場合、`QueryStatement`に操作を適用します。
+それは、流暢なクエリ式を維持します。
+
+```rust
+use sea_orm::{entity::*, query::*, tests_cfg::cake, DbBackend};
+
+assert_eq!(
+    cake::Entity::find()
+        .apply_if(Some(3), |mut query, v| {
+            query.filter(cake::Column::Id.eq(v))
+        })
+        .apply_if(Some(100), QuerySelect::limit)
+        .apply_if(None, QuerySelect::offset::<Option<u64>>) // オフセットなし
+        .build(DbBackend::Postgres)
+        .to_string(),
+    r#"SELECT "cake"."id", "cake"."name" FROM "cake" WHERE "cake"."id" = 3 LIMIT 100"#
 );
 ```
 
