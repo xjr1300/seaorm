@@ -14,6 +14,10 @@
     - [遅延読み込み](#遅延読み込み)
     - [貪欲な読み込み](#貪欲な読み込み)
     - [自己参照](#自己参照)
+  - [カスタム結合条件](#カスタム結合条件)
+    - [関連](#関連-1)
+    - [リンク](#リンク)
+    - [カスタム結合](#カスタム結合)
   - [Bakery Schema](#bakery-schema)
 
 ## 1対1
@@ -457,6 +461,175 @@ impl Linked for SelfReferencingLink {
         vec![Relation::SelfReferencing.def()]
     }
 }
+```
+
+## カスタム結合条件
+
+次のように、時々、カスタム条件で他のテーブルを結合したいと考えるかもしれません。
+
+```sql
+SELECT
+    `cake`.`id`,
+    `cake`.`name`
+FROM
+    `cake`
+    LEFT JOIN `fruit` ON `cake`.`id` = `fruit`.`cake_id`
+    AND `fruit`.`name` LIKE '%tropical%' -- カスタム結合条件
+```
+
+それは、次の方法の1つで実行できます。
+
+### 関連
+
+関連の列挙型に追加の結合条件を直接追加します。
+最も簡単な方法は、`on_condition`手続き型マクロ属性で`sea_query::SimpleExpr`を提供することです。
+
+```rust
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {
+    #[sea_orm(has_many = "super::fruit::Entity")]
+    Fruit,
+    #[sea_orm(
+        has_many = "super::fruit::Entity",
+        // 追加のon_conditionで、`sea_query::IntoCondition`を実装した任意の条件を受け付けます。
+        on_condition = r#"super::fruit::Column::Name.like("%tropical%")"#
+    )]
+    TropicalFruit,
+}
+```
+
+上記の手続型マクロは次の通り展開されます。
+
+```rust
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {
+    Fruit,
+    TropicalFruit,
+}
+
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Self::Fruit => Entity::has_many(super::fruit::Entity).into(),
+            Self::TropicalFruit => Entity::has_many(super::fruit::Entity)
+                .on_condition(|_left, _right| {
+                    super::fruit::Column::Name.like("%tropical%")
+                        .into_condition()
+                })
+                .into(),
+        }
+    }
+}
+```
+
+生成するSQLは次の通りです。
+
+```rust
+assert_eq!(
+    cake::Entity::find()
+        .join(JoinType::LeftJoin, cake::Relation::TropicalFruit.def())
+        .build(DbBackend::MySql)
+        .to_string(),
+    [
+        "SELECT `cake`.`id`, `cake`.`name` FROM `cake`",
+        "LEFT JOIN `fruit` ON `cake`.`id` = `fruit`.`cake_id` AND `fruit`.`name` LIKE '%tropical%'",
+    ]
+    .join(" ")
+);
+```
+
+### リンク
+
+`Linked`でカスタム結合条件を定義することもできます。
+
+```rust
+#[derive(Debug)]
+pub struct CheeseCakeToFillingVendor;
+
+impl Linked for CheeseCakeToFillingVendor {
+    type FromEntity = super::cake::Entity;
+    type ToEntity = super::vendor::Entity;
+
+    fn link(&self) -> Vec<RelationDef> {
+        vec![
+            super::cake_filling::Relation::Cake
+                .def()
+                // `on_condition`メソッドは、結合式で左側と右側のテーブルを示すクロージャーを、
+                // パラメーターで受け取ります。
+                .on_condition(|left, _right| {
+                    Expr::tbl(left, super::cake::Column::Name)
+                        .like("%cheese%")
+                        .into_condition()
+                })
+                .rev(),
+            super::cake_filling::Relation::Filling.def(),
+            super::filling::Relation::Vendor.def(),
+        ]
+    }
+}
+```
+
+生成されるSQLは次の通りです。
+
+```rust
+assert_eq!(
+    cake::Entity::find()
+        .find_also_linked(entity_linked::CheeseCakeToFillingVendor)
+        .build(DbBackend::MySql)
+        .to_string(),
+    [
+        r#"SELECT `cake`.`id` AS `A_id`, `cake`.`name` AS `A_name`,"#,
+        r#"`r2`.`id` AS `B_id`, `r2`.`name` AS `B_name`"#,
+        r#"FROM `cake`"#,
+        r#"LEFT JOIN `cake_filling` AS `r0` ON `cake`.`id` = `r0`.`cake_id` AND `cake`.`name` LIKE '%cheese%'"#,
+        r#"LEFT JOIN `filling` AS `r1` ON `r0`.`filling_id` = `r1`.`id`"#,
+        r#"LEFT JOIN `vendor` AS `r2` ON `r1`.`vendor_id` = `r2`.`id`"#,
+    ]
+    .join(" ")
+);
+```
+
+### カスタム結合
+
+最後に、カスタム結合条件は、結合式を構築する時点で定義することができます。
+
+```rust
+assert_eq!(
+    cake::Entity::find()
+        .join(JoinType::LeftJoin, cake::Relation::TropicalFruit.def())
+        .join(
+            JoinType::LeftJoin,
+            cake_filling::Relation::Cake
+                .def()
+                .rev()
+                .on_condition(|_left, right| {
+                    Expr::tbl(right, cake_filling::Column::CakeId)
+                        .gt(10)
+                        .into_condition()
+                })
+        )
+        .join(
+            JoinType::LeftJoin,
+            cake_filling::Relation::Filling
+                .def()
+                .on_condition(|_left, right| {
+                    Expr::tbl(right, filling::Column::Name)
+                        .like("%lemon%")
+                        .into_condition()
+                })
+        )
+        .join(JoinType::LeftJoin, filling::Relation::Vendor.def())
+        .build(DbBackend::MySql)
+        .to_string(),
+    [
+        "SELECT `cake`.`id`, `cake`.`name` FROM `cake`",
+        "LEFT JOIN `fruit` ON `cake`.`id` = `fruit`.`cake_id` AND `fruit`.`name` LIKE '%tropical%'",
+        "LEFT JOIN `cake_filling` ON `cake`.`id` = `cake_filling`.`cake_id` AND `cake_filling`.`cake_id` > 10",
+        "LEFT JOIN `filling` ON `cake_filling`.`filling_id` = `filling`.`id` AND `filling`.`name` LIKE '%lemon%'",
+        "LEFT JOIN `vendor` ON `filling`.`vendor_id` = `vendor`.`id`",
+    ]
+    .join(" ")
+);
 ```
 
 ## Bakery Schema
